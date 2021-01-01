@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 void main() => runApp(MyApp());
@@ -41,6 +42,8 @@ class HomeView extends StatefulWidget {
 
 List<Widget> todoList = [];
 List<Widget> doneList = [];
+final done = new ValueNotifier<int>(doneList.length);
+final todo = new ValueNotifier<int>(todoList.length);
 
 class _HomeViewState extends State<HomeView> {
   @override
@@ -49,7 +52,7 @@ class _HomeViewState extends State<HomeView> {
         floatingActionButton: FloatingActionButton(
           onPressed: () {
             setState(() {
-              todoList.add(MoveableStackItem());
+              todoList.add(MoveableStackItem(100, 300, true));
             });
           },
         ),
@@ -63,45 +66,57 @@ class _HomeViewState extends State<HomeView> {
             child: Row(
               children: <Widget>[
                 Expanded(
-                  child: FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: 1,
-                    child: Container(
-                      child: Stack(
-                        children: todoList,
-                      ),
-                      height: 1000,
-                      margin: const EdgeInsets.all(6),
-                      //color: Theme.of(context).primaryColorLight,
-                      decoration: BoxDecoration(
-                          color: Theme.of(context).primaryColorLight,
-                          border: Border.all(
-                            color: Theme.of(context).primaryColor,
-                            width: 3,
+                  child: ValueListenableBuilder<int>(
+                    valueListenable: todo,
+                    builder: (context, value, child) {
+                      return FractionallySizedBox(
+                        alignment: Alignment.centerLeft,
+                        widthFactor: 1,
+                        child: Container(
+                          child: Stack(
+                            children: todoList,
                           ),
-                          borderRadius: BorderRadius.all(Radius.circular(20))),
-                    ),
+                          height: 1000,
+                          margin: const EdgeInsets.all(6),
+                          //color: Theme.of(context).primaryColorLight,
+                          decoration: BoxDecoration(
+                              color: Theme.of(context).primaryColorLight,
+                              border: Border.all(
+                                color: Theme.of(context).primaryColor,
+                                width: 3,
+                              ),
+                              borderRadius:
+                                  BorderRadius.all(Radius.circular(20))),
+                        ),
+                      );
+                    },
                   ),
                 ),
                 Expanded(
-                  child: FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: 1,
-                    child: Container(
-                      child: Stack(
-                        children: doneList,
-                      ),
-                      height: 1000,
-                      margin: const EdgeInsets.all(6),
-                      //color: Theme.of(context).primaryColorLight,
-                      decoration: BoxDecoration(
-                          color: Theme.of(context).backgroundColor,
-                          border: Border.all(
-                            color: Theme.of(context).accentColor,
-                            width: 3,
+                  child: ValueListenableBuilder<int>(
+                    valueListenable: done,
+                    builder: (context, value, child) {
+                      return FractionallySizedBox(
+                        alignment: Alignment.centerLeft,
+                        widthFactor: 1,
+                        child: Container(
+                          child: Stack(
+                            children: doneList,
                           ),
-                          borderRadius: BorderRadius.all(Radius.circular(20))),
-                    ),
+                          height: 1000,
+                          margin: const EdgeInsets.all(6),
+                          //color: Theme.of(context).primaryColorLight,
+                          decoration: BoxDecoration(
+                              color: Theme.of(context).backgroundColor,
+                              border: Border.all(
+                                color: Theme.of(context).accentColor,
+                                width: 3,
+                              ),
+                              borderRadius:
+                                  BorderRadius.all(Radius.circular(20))),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],
@@ -113,19 +128,29 @@ class _HomeViewState extends State<HomeView> {
 }
 
 class MoveableStackItem extends StatefulWidget {
+  MoveableStackItem(this.xPosition, this.yPosition, this.isTodo);
+
+  double xPosition;
+  double yPosition;
+  bool isTodo;
+
   @override
   State<StatefulWidget> createState() {
-    return _MoveableStackItemState();
+    return _MoveableStackItemState(xPosition, yPosition, isTodo);
   }
 }
 
 class _MoveableStackItemState extends State<MoveableStackItem> {
-  double xPosition = 100;
-  double yPosition = 400;
-  Color color;
+  _MoveableStackItemState(this.xPosition, this.yPosition, this.isTodo);
+
+  double xPosition;
+  double yPosition;
+  bool isTodo;
+
+  bool hitEdge = false;
+
   @override
   void initState() {
-    color = Color(0xff00c29a);
     super.initState();
   }
 
@@ -144,22 +169,38 @@ class _MoveableStackItemState extends State<MoveableStackItem> {
             xPosition += tapInfo.delta.dx;
             yPosition += tapInfo.delta.dy;
 
-            if (yPosition > (height - 85)) {
-              yPosition = yPosition - 5;
+            if (yPosition > (height - 88)) {
+              yPosition = (height - 88);
             }
 
-            if (yPosition < -2) {
-              yPosition = yPosition + 5;
+            if (yPosition < 0) {
+              yPosition = 0;
             }
 
-            if (xPosition < -2 || xPosition > ((width - 110) / 2)) {
-              xPosition = xPosition + 5;
+            if (xPosition < 0) {
+              xPosition = 0;
             }
 
-            if (xPosition > ((width - 130) / 2)) {
-              xPosition = xPosition - 5;
+            if (xPosition > ((width - 135) / 2)) {
+              xPosition = ((width - 135) / 2);
+
+              //todoList.remove(this);
+              if (!hitEdge && isTodo) {
+                setState(() {
+                  todoList = [];
+                  doneList.add(MoveableStackItem(
+                      (xPosition - (xPosition - 5)), yPosition, false));
+                  done.value++;
+                  todo.value--;
+                });
+              }
+
+              hitEdge = true;
             }
           });
+        },
+        onPanEnd: (tapInfo) {
+          hitEdge = false;
         },
         child: DragItem('images/fold_laundry.png'),
       ),
