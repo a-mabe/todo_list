@@ -7,7 +7,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
         title: 'Draggable',
-        home: MyHomePage(),
+        home: HomeView(),
         theme: ThemeData(
           // Define the default brightness and colors.
           brightness: Brightness.light,
@@ -34,7 +34,154 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MyHomePage extends StatefulWidget {
+class HomeView extends StatefulWidget {
+  @override
+  _HomeViewState createState() => _HomeViewState();
+}
+
+List<Widget> todoList = [];
+List<Widget> doneList = [];
+
+class _HomeViewState extends State<HomeView> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            setState(() {
+              todoList.add(MoveableStackItem());
+            });
+          },
+        ),
+        body: new Container(
+            padding: const EdgeInsets.only(
+              left: 9,
+              top: 60,
+              right: 9,
+              bottom: 20,
+            ),
+            child: Row(
+              children: <Widget>[
+                Expanded(
+                  child: FractionallySizedBox(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: 1,
+                    child: Container(
+                      child: Stack(
+                        children: todoList,
+                      ),
+                      height: 1000,
+                      margin: const EdgeInsets.all(6),
+                      //color: Theme.of(context).primaryColorLight,
+                      decoration: BoxDecoration(
+                          color: Theme.of(context).primaryColorLight,
+                          border: Border.all(
+                            color: Theme.of(context).primaryColor,
+                            width: 3,
+                          ),
+                          borderRadius: BorderRadius.all(Radius.circular(20))),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: FractionallySizedBox(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: 1,
+                    child: Container(
+                      child: Stack(
+                        children: doneList,
+                      ),
+                      height: 1000,
+                      margin: const EdgeInsets.all(6),
+                      //color: Theme.of(context).primaryColorLight,
+                      decoration: BoxDecoration(
+                          color: Theme.of(context).backgroundColor,
+                          border: Border.all(
+                            color: Theme.of(context).accentColor,
+                            width: 3,
+                          ),
+                          borderRadius: BorderRadius.all(Radius.circular(20))),
+                    ),
+                  ),
+                ),
+              ],
+            )));
+    /*Stack(
+          children: movableItems,
+        ));*/
+  }
+}
+
+class MoveableStackItem extends StatefulWidget {
+  @override
+  State<StatefulWidget> createState() {
+    return _MoveableStackItemState();
+  }
+}
+
+class _MoveableStackItemState extends State<MoveableStackItem> {
+  double xPosition = 100;
+  double yPosition = 400;
+  Color color;
+  @override
+  void initState() {
+    color = Color(0xff00c29a);
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    double width = MediaQuery.of(context).size.width;
+    // Height (without status and toolbar)
+    double height = MediaQuery.of(context).size.height - kToolbarHeight;
+
+    return Positioned(
+      top: yPosition,
+      left: xPosition,
+      child: GestureDetector(
+        onPanUpdate: (tapInfo) {
+          setState(() {
+            xPosition += tapInfo.delta.dx;
+            yPosition += tapInfo.delta.dy;
+
+            if (yPosition > (height - 85)) {
+              yPosition = yPosition - 5;
+            }
+
+            if (yPosition < -2) {
+              yPosition = yPosition + 5;
+            }
+
+            if (xPosition < -2 || xPosition > ((width - 110) / 2)) {
+              xPosition = xPosition + 5;
+            }
+
+            if (xPosition > ((width - 130) / 2)) {
+              xPosition = xPosition - 5;
+            }
+          });
+        },
+        child: DragItem('images/fold_laundry.png'),
+      ),
+    );
+  }
+}
+
+class DragItem extends StatelessWidget {
+  DragItem(this.imageSource);
+
+  String imageSource;
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      imageSource,
+      width: 40.0,
+    );
+  }
+}
+
+/*class MyHomePage extends StatefulWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
   final String title;
   @override
@@ -170,7 +317,7 @@ class DragItem extends StatelessWidget {
       width: 40.0,
     );
   }
-}
+}*/
 
 /*class Drag extends StatefulWidget {
   Drag({Key key}) : super(key: key);
