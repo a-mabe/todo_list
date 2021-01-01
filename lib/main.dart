@@ -52,7 +52,8 @@ class _HomeViewState extends State<HomeView> {
         floatingActionButton: FloatingActionButton(
           onPressed: () {
             setState(() {
-              todoList.add(MoveableStackItem(100, 300, true));
+              todoList
+                  .add(MoveableStackItem(100, 300, true, (todoList.length)));
             });
           },
         ),
@@ -128,24 +129,26 @@ class _HomeViewState extends State<HomeView> {
 }
 
 class MoveableStackItem extends StatefulWidget {
-  MoveableStackItem(this.xPosition, this.yPosition, this.isTodo);
+  MoveableStackItem(this.xPosition, this.yPosition, this.isTodo, this.id);
 
   double xPosition;
   double yPosition;
   bool isTodo;
+  int id;
 
   @override
   State<StatefulWidget> createState() {
-    return _MoveableStackItemState(xPosition, yPosition, isTodo);
+    return _MoveableStackItemState(xPosition, yPosition, isTodo, id);
   }
 }
 
 class _MoveableStackItemState extends State<MoveableStackItem> {
-  _MoveableStackItemState(this.xPosition, this.yPosition, this.isTodo);
+  _MoveableStackItemState(this.xPosition, this.yPosition, this.isTodo, this.id);
 
   double xPosition;
   double yPosition;
   bool isTodo;
+  int id;
 
   bool hitEdge = false;
 
@@ -183,9 +186,9 @@ class _MoveableStackItemState extends State<MoveableStackItem> {
               //todoList.remove(this);
               if (!hitEdge && !isTodo) {
                 setState(() {
-                  doneList = [];
-                  todoList.add(
-                      MoveableStackItem(((width - 125) / 2), yPosition, true));
+                  doneList.removeAt(id);
+                  todoList.add(MoveableStackItem(
+                      ((width - 125) / 2), yPosition, true, (todoList.length)));
                   done.value--;
                   todo.value++;
                 });
@@ -202,9 +205,9 @@ class _MoveableStackItemState extends State<MoveableStackItem> {
               //todoList.remove(this);
               if (!hitEdge && isTodo) {
                 setState(() {
-                  todoList = [];
-                  doneList.add(MoveableStackItem(
-                      (xPosition - (xPosition - 5)), yPosition, false));
+                  todoList.removeAt(id);
+                  doneList.add(MoveableStackItem((xPosition - (xPosition - 5)),
+                      yPosition, false, (doneList.length)));
                   done.value++;
                   todo.value--;
                 });
