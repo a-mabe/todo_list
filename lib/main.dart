@@ -177,12 +177,27 @@ class _MoveableStackItemState extends State<MoveableStackItem> {
               yPosition = 0;
             }
 
-            if (xPosition < 0) {
-              xPosition = 0;
+            if (xPosition < -15 && !isTodo) {
+              xPosition = -15;
+
+              //todoList.remove(this);
+              if (!hitEdge && !isTodo) {
+                setState(() {
+                  doneList = [];
+                  todoList.add(
+                      MoveableStackItem(((width - 125) / 2), yPosition, true));
+                  done.value--;
+                  todo.value++;
+                });
+              }
+
+              hitEdge = true;
+            } else if (xPosition < -2 && isTodo) {
+              xPosition = -2;
             }
 
-            if (xPosition > ((width - 135) / 2)) {
-              xPosition = ((width - 135) / 2);
+            if (xPosition > ((width - 105) / 2) && isTodo) {
+              xPosition = ((width - 105) / 2);
 
               //todoList.remove(this);
               if (!hitEdge && isTodo) {
@@ -196,6 +211,8 @@ class _MoveableStackItemState extends State<MoveableStackItem> {
               }
 
               hitEdge = true;
+            } else if (xPosition > ((width - 130) / 2) && !isTodo) {
+              xPosition = ((width - 130) / 2);
             }
           });
         },
