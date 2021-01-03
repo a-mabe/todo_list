@@ -2,7 +2,7 @@ import 'dart:convert';
 
 class TodoItem {
   final int id;
-  final double xpos, ypos;
+  double xpos, ypos;
   final String icon;
 
   TodoItem({

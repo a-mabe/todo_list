@@ -113,6 +113,12 @@ List<String> images = [
 /// -------------------------------------------------------
 class _HomeViewState extends State<HomeView> {
   @override
+  void initState() {
+    super.initState();
+    loadToDoList();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
         floatingActionButton: FloatingActionButton(
@@ -130,7 +136,7 @@ class _HomeViewState extends State<HomeView> {
               todoMap[itemCount] = todoList.length - 1;
 
               /// Add the [TodoItem] to [todoItems].
-              setToDoList("gshopping", 80, 300, image, itemCount);
+              addTodoList("gshopping", 80, 300, image, itemCount);
 
               /// Increment the count since an item has been added.
               itemCount++;
@@ -251,6 +257,37 @@ class _HomeViewState extends State<HomeView> {
   }
 }
 
+void loadToDoList() async {
+  // Obtain shared preferences
+  final prefs = await SharedPreferences.getInstance();
+
+  // Try reading data from the key. If it doesn't exist, return empty list.
+  String fetchedToDoList = prefs.getString('todo') ?? "";
+
+  List<TodoItem> decodedData = [];
+
+  if (fetchedToDoList != "") decodedData = TodoItem.decode(fetchedToDoList);
+
+  todoItems = decodedData;
+
+  print("*****");
+  print(todoItems);
+  print("*****");
+
+  for (TodoItem item in todoItems) {
+    /// Add an item to the list of todo item widgets.
+    todoList.add(MoveableStackItem(
+        item.xpos, item.ypos, true, itemCount, item.icon, UniqueKey()));
+
+    /// Set the [itemCount] to correspond to the location in [todoList].
+    todoMap[itemCount] = todoList.length - 1;
+
+    /// Increment the count since an item has been added.
+    itemCount++;
+    todo.value++;
+  }
+}
+
 /// -------------------------------------------------------
 /// Adds a todo item to the todo list to be stored on disk. The [xpos] and
 /// [ypos] parameters are set so that the icons load exactly where the user
@@ -265,36 +302,31 @@ class _HomeViewState extends State<HomeView> {
 ///                             "id": "2"}
 ///             ]
 /// -------------------------------------------------------
-void setToDoList(
+void addTodoList(
     String title, double xpos, double ypos, String icon, int id) async {
+  // Obtain shared preferences
+  final prefs = await SharedPreferences.getInstance();
+
+  // Try reading data from the key. If it doesn't exist, return empty list.
+  String fetchedToDoList = prefs.getString('todo') ?? "";
+
   todoItems.add(TodoItem(id: id, xpos: xpos, ypos: ypos, icon: icon));
 
   final String encodedData = TodoItem.encode(todoItems);
 
-  final List<TodoItem> decodedData = TodoItem.decode(encodedData);
+  prefs.setString('todo', encodedData);
+}
 
-  print(decodedData);
-
-  /*
-  // obtain shared preferences
+/// -------------------------------------------------------
+///
+/// -------------------------------------------------------
+void saveTodoListState() async {
+  // Obtain shared preferences
   final prefs = await SharedPreferences.getInstance();
 
-  // Try reading data from the counter key. If it doesn't exist, return 0.
-  List<Map> fetchedToDoList = prefs.getInt('todo') ?? [];
+  final String encodedData = TodoItem.encode(todoItems);
 
-  Map<String, String> todoItem = HashMap();
-
-  print(fetchedToDoList);
-
-  todoItem["xpos"] = xpos.toString();
-  todoItem["ypos"] = ypos.toString();
-  todoItem["icon"] = icon;
-  todoItem["id"] = id.toString();
-
-  fetchedToDoList.add(todoItem);
-
-  prefs.setString("todo", json.encode(fetchedToDoList));
-  */
+  prefs.setString('todo', encodedData);
 }
 
 /// -------------------------------------------------------
@@ -478,6 +510,11 @@ class _MoveableStackItemState extends State<MoveableStackItem> {
         },
         onPanEnd: (tapInfo) {
           hitEdge = false;
+
+          todoItems[todoMap[id]].xpos = xPosition;
+          todoItems[todoMap[id]].ypos = yPosition;
+
+          saveTodoListState();
         },
         child: DragItem(imageSource),
       ),
