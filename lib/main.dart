@@ -115,7 +115,7 @@ class _HomeViewState extends State<HomeView> {
   @override
   void initState() {
     super.initState();
-    loadToDoList();
+    loadLists();
   }
 
   @override
@@ -257,7 +257,7 @@ class _HomeViewState extends State<HomeView> {
   }
 }
 
-void loadToDoList() async {
+void loadLists() async {
   // Obtain shared preferences
   final prefs = await SharedPreferences.getInstance();
 
@@ -267,12 +267,7 @@ void loadToDoList() async {
   List<TodoItem> decodedData = [];
 
   if (fetchedToDoList != "") decodedData = TodoItem.decode(fetchedToDoList);
-
   todoItems = decodedData;
-
-  print("*****");
-  print(todoItems);
-  print("*****");
 
   for (TodoItem item in todoItems) {
     /// Add an item to the list of todo item widgets.
@@ -285,6 +280,29 @@ void loadToDoList() async {
     /// Increment the count since an item has been added.
     itemCount++;
     todo.value++;
+  }
+
+  //----------------------------------------------------------------------
+
+  // Try reading data from the key. If it doesn't exist, return empty list.
+  String fetchedDoneList = prefs.getString('done') ?? "";
+
+  List<TodoItem> decodedDone = [];
+
+  if (fetchedDoneList != "") decodedDone = TodoItem.decode(fetchedDoneList);
+  doneItems = decodedDone;
+
+  for (TodoItem item in doneItems) {
+    /// Add an item to the list of todo item widgets.
+    doneList.add(MoveableStackItem(
+        item.xpos, item.ypos, false, itemCount, item.icon, UniqueKey()));
+
+    /// Set the [itemCount] to correspond to the location in [doneList].
+    doneMap[itemCount] = doneList.length - 1;
+
+    /// Increment the count since an item has been added.
+    itemCount++;
+    done.value++;
   }
 }
 
@@ -307,9 +325,6 @@ void addTodoList(
   // Obtain shared preferences
   final prefs = await SharedPreferences.getInstance();
 
-  // Try reading data from the key. If it doesn't exist, return empty list.
-  String fetchedToDoList = prefs.getString('todo') ?? "";
-
   todoItems.add(TodoItem(id: id, xpos: xpos, ypos: ypos, icon: icon));
 
   final String encodedData = TodoItem.encode(todoItems);
@@ -320,13 +335,41 @@ void addTodoList(
 /// -------------------------------------------------------
 ///
 /// -------------------------------------------------------
-void saveTodoListState() async {
+void saveListStates() async {
   // Obtain shared preferences
   final prefs = await SharedPreferences.getInstance();
 
-  final String encodedData = TodoItem.encode(todoItems);
+  final String encodedTodo = TodoItem.encode(todoItems);
+  final String encodedDone = TodoItem.encode(doneItems);
 
-  prefs.setString('todo', encodedData);
+  prefs.setString('todo', encodedTodo);
+  prefs.setString('done', encodedDone);
+}
+
+/// -------------------------------------------------------
+/// Adds a todo item to the todo list to be stored on disk. The [xpos] and
+/// [ypos] parameters are set so that the icons load exactly where the user
+/// left them. [title] and [icon] are also set to display the proper item.
+/// To keep track of which item it is, [id] is also set.
+///
+/// Example todo list structure with grocery shopping entry:
+///
+/// "todoList": [ "gshopping": {"xpos": "100",
+///                             "ypos": "100",
+///                             "icon": "images/grocery_shopping.png",
+///                             "id": "2"}
+///             ]
+/// -------------------------------------------------------
+void addDoneList(
+    String title, double xpos, double ypos, String icon, int id) async {
+  // Obtain shared preferences
+  final prefs = await SharedPreferences.getInstance();
+
+  doneItems.add(TodoItem(id: id, xpos: xpos, ypos: ypos, icon: icon));
+
+  final String encodedData = TodoItem.encode(doneItems);
+
+  prefs.setString('done', encodedData);
 }
 
 /// -------------------------------------------------------
@@ -368,6 +411,8 @@ class _MoveableStackItemState extends State<MoveableStackItem> {
   // Prevents the item from being transferred more than once in a row.
   bool hitEdge = false;
 
+  bool transferred = false;
+
   @override
   void initState() {
     super.initState();
@@ -406,6 +451,8 @@ class _MoveableStackItemState extends State<MoveableStackItem> {
               // If it is the first time the widget is being bumped to the lefthand side.
               if (!hitEdge && !isTodo) {
                 setState(() {
+                  transferred = true;
+
                   // ---------------------------
                   // Remove the item from the done side.
                   // ---------------------------
@@ -461,6 +508,8 @@ class _MoveableStackItemState extends State<MoveableStackItem> {
               // If it is the first time the widget is being bumped to the righthand side.
               if (!hitEdge && isTodo) {
                 setState(() {
+                  transferred = true;
+
                   // ---------------------------
                   // Remove the item from the todo side.
                   // ---------------------------
@@ -511,10 +560,15 @@ class _MoveableStackItemState extends State<MoveableStackItem> {
         onPanEnd: (tapInfo) {
           hitEdge = false;
 
-          todoItems[todoMap[id]].xpos = xPosition;
-          todoItems[todoMap[id]].ypos = yPosition;
+          if (isTodo && !transferred) {
+            todoItems[todoMap[id]].xpos = xPosition;
+            todoItems[todoMap[id]].ypos = yPosition;
+          } else if (!isTodo && !transferred) {
+            doneItems[doneMap[id]].xpos = xPosition;
+            doneItems[doneMap[id]].ypos = yPosition;
+          }
 
-          saveTodoListState();
+          saveListStates();
         },
         child: DragItem(imageSource),
       ),
