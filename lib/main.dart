@@ -90,7 +90,7 @@ List<String> images = [
   "images/homework_purple.png",
   "images/sweep.png",
   "images/wash_car.png",
-  "images/washing_machine.png",
+  "images/wash_clothes.png",
   "images/email.png",
   "images/feed_dog.png",
   "images/trash.png",
@@ -98,11 +98,12 @@ List<String> images = [
   "images/dishes.png",
   "images/dust.png",
   "images/vacuum.png",
-  "images/watering_can.png",
   "images/toilet.png",
   "images/homework_red.png",
   "images/fold_laundry.png",
-  "images/tub.png"
+  "images/tub.png",
+  "images/lightbulb.png",
+  "images/homework_green.png"
 ];
 
 /// -------------------------------------------------------
@@ -126,7 +127,7 @@ class _HomeViewState extends State<HomeView> {
             setState(() {
               // Random index in the range [0, 20) to pick an image from
               // the list of possible icons.
-              String image = images[next(0, 20)];
+              String image = images[next(0, 22)];
 
               /// Add an item to the list of todo item widgets.
               todoList.add(MoveableStackItem(
@@ -260,6 +261,8 @@ class _HomeViewState extends State<HomeView> {
 void loadLists() async {
   // Obtain shared preferences
   final prefs = await SharedPreferences.getInstance();
+
+  //prefs.clear();
 
   // Try reading data from the key. If it doesn't exist, return empty list.
   String fetchedToDoList = prefs.getString('todo') ?? "";
@@ -413,9 +416,83 @@ class _MoveableStackItemState extends State<MoveableStackItem> {
 
   bool transferred = false;
 
+  var selected;
+
   @override
   void initState() {
     super.initState();
+  }
+
+  void _showPopupMenu() async {
+    selected = await showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(100, 200, 100, 600),
+      items: [
+        PopupMenuItem(
+          child: Text(imageSource),
+          enabled: false,
+        ),
+        PopupMenuItem(
+          child: Image.asset(
+            imageSource,
+            width: 50.0,
+          ),
+        ),
+        PopupMenuItem(
+          child: Text("Delete"),
+          value: 0,
+        ),
+      ],
+      elevation: 8.0,
+    );
+
+    switch (selected) {
+      case 0:
+        print("You selected Delete.");
+        if (isTodo) {
+          // ---------------------------
+          // Remove the item from the todo side.
+          // ---------------------------
+          int location = todoMap[id];
+          todoList.removeAt(location);
+          todoItems.removeAt(location);
+          todoMap.remove(id);
+          // ---------------------------
+
+          // ---------------------------
+          // Update the key map.
+          // ---------------------------
+          for (int key in todoMap.keys) {
+            if (todoMap[key] > location) todoMap[key] = todoMap[key] - 1;
+          }
+          // ---------------------------
+
+          todo.value--;
+        } else {
+          // ---------------------------
+          // Remove the item from the done side.
+          // ---------------------------
+          int location = doneMap[id];
+          doneList.removeAt(location);
+          doneItems.removeAt(location);
+          doneMap.remove(id);
+          // ---------------------------
+
+          // ---------------------------
+          // Update the key map.
+          // ---------------------------
+          for (int key in doneMap.keys) {
+            if (doneMap[key] > location) {
+              doneMap[key] = doneMap[key] - 1;
+            }
+          }
+          // ---------------------------
+
+          done.value--;
+        }
+        saveListStates();
+        break;
+    }
   }
 
   @override
@@ -429,6 +506,10 @@ class _MoveableStackItemState extends State<MoveableStackItem> {
       top: yPosition,
       left: xPosition,
       child: GestureDetector(
+        onTap: () {
+          print("tap");
+          _showPopupMenu();
+        },
         onPanUpdate: (tapInfo) {
           setState(() {
             // Update the position of the widget.
@@ -436,8 +517,8 @@ class _MoveableStackItemState extends State<MoveableStackItem> {
             yPosition += tapInfo.delta.dy;
 
             // If the widget is being dragged past the bottom.
-            if (yPosition > (height - 112)) {
-              yPosition = (height - 112);
+            if (yPosition > (height - 92)) {
+              yPosition = (height - 92);
             }
             // If the widget is being dragged past the top.
             if (yPosition < 0) {
@@ -594,7 +675,7 @@ class DragItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Image.asset(
       imageSource,
-      width: 60.0,
+      width: 50.0,
     );
   }
 }
