@@ -2,6 +2,7 @@ import 'dart:collection';
 import 'dart:convert';
 
 import 'package:todo_list/todo_item.dart';
+import 'package:todo_list/data/icon_names.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -423,24 +424,60 @@ class _MoveableStackItemState extends State<MoveableStackItem> {
     super.initState();
   }
 
-  void _showPopupMenu() async {
+  void _showPopupMenu(Offset offset) async {
+    // Get the width of the screen.
+    double width = MediaQuery.of(context).size.width;
+    // Get the height of the screen.
+    double height = MediaQuery.of(context).size.height - kToolbarHeight;
+
+    double left = offset.dx;
+    double top = offset.dy;
+
     selected = await showMenu(
       context: context,
-      position: RelativeRect.fromLTRB(100, 200, 100, 600),
+      position: RelativeRect.fromLTRB(left, top, 100000, 0),
       items: [
         PopupMenuItem(
-          child: Text(imageSource),
+          child: Center(
+            child: Text(
+              names[imageSource],
+              style:
+                  TextStyle(color: Colors.black, fontWeight: FontWeight.w800),
+            ),
+          ),
           enabled: false,
         ),
         PopupMenuItem(
-          child: Image.asset(
-            imageSource,
-            width: 50.0,
-          ),
+          child: Center(
+              child: Column(
+            children: [
+              Image.asset(
+                imageSource,
+                width: 50.0,
+              ),
+              Container(
+                padding: const EdgeInsets.only(
+                  left: 0,
+                  top: 14,
+                  right: 0,
+                  bottom: 0,
+                ),
+              ),
+              Text(
+                "Edit",
+                style: TextStyle(color: Colors.black87),
+              ),
+            ],
+          )),
         ),
         PopupMenuItem(
-          child: Text("Delete"),
-          value: 0,
+          child: Center(
+            child: Text(
+              "Delete",
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+          value: 1,
         ),
       ],
       elevation: 8.0,
@@ -448,6 +485,8 @@ class _MoveableStackItemState extends State<MoveableStackItem> {
 
     switch (selected) {
       case 0:
+
+      case 1:
         print("You selected Delete.");
         if (isTodo) {
           // ---------------------------
@@ -506,9 +545,9 @@ class _MoveableStackItemState extends State<MoveableStackItem> {
       top: yPosition,
       left: xPosition,
       child: GestureDetector(
-        onTap: () {
+        onTapDown: (TapDownDetails details) {
           print("tap");
-          _showPopupMenu();
+          _showPopupMenu(details.globalPosition);
         },
         onPanUpdate: (tapInfo) {
           setState(() {
