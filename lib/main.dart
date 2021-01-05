@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:todo_list/todo_item.dart';
 import 'package:todo_list/data/icon_names.dart';
+import 'package:todo_list/addItem.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -126,6 +127,10 @@ class _HomeViewState extends State<HomeView> {
         floatingActionButton: FloatingActionButton(
           onPressed: () {
             setState(() {
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => SearchList()));
+
+              /*
               // Random index in the range [0, 20) to pick an image from
               // the list of possible icons.
               String image = images[next(0, 22)];
@@ -142,6 +147,7 @@ class _HomeViewState extends State<HomeView> {
 
               /// Increment the count since an item has been added.
               itemCount++;
+              */
             });
           },
         ),
