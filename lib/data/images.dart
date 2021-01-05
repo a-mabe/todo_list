@@ -1,5 +1,5 @@
 final List<String> images = [
-  "images/dishes",
+  "images/dishes.png",
   "images/dust.png",
   "images/email.png",
   "images/feed_cat.png",

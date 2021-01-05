@@ -184,10 +184,11 @@ class Uiitem extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Image.asset(
-              'images/homework_yellow.png',
-              width: 10,
-            ),
+            Center(
+                child: Image.asset(
+              item.image,
+              width: 50,
+            )),
             Padding(
               padding: EdgeInsets.fromLTRB(10.0, 15.0, 0.0, 0.0),
               child: Column(
@@ -200,9 +201,6 @@ class Uiitem extends StatelessWidget {
                     maxLines: 1,
                   ),
                   SizedBox(height: 0.0),
-                  Text(
-                    item.image,
-                  ),
                 ],
               ),
             ),

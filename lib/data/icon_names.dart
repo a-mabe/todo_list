@@ -1,5 +1,5 @@
 final Map names = {
-  "images/dishes": "Wash Dishes",
+  "images/dishes.png": "Wash Dishes",
   "images/dust.png": "Dust",
   "images/email.png": "Check/Send Email",
   "images/feed_cat.png": "Feed Cat(s)",
