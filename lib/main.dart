@@ -1,6 +1,8 @@
 import 'dart:collection';
 import 'dart:convert';
 
+import 'package:screen_loader/screen_loader.dart';
+
 import 'package:todo_list/todo_item.dart';
 import 'package:todo_list/data/icon_names.dart';
 import 'package:todo_list/addItem.dart';
@@ -50,8 +52,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+        debugShowCheckedModeBanner: false,
         title: 'Draggable',
-        home: HomeView(),
+        home: HomeView(newImage: "", title: ""),
         theme: ThemeData(
           // Define the default brightness and colors.
           brightness: Brightness.light,
@@ -79,8 +82,14 @@ class MyApp extends StatelessWidget {
 }
 
 class HomeView extends StatefulWidget {
+  final String newImage, title;
+
+  HomeView({Key key, @required this.newImage, @required this.title})
+      : super(key: key);
+
   @override
-  _HomeViewState createState() => _HomeViewState();
+  _HomeViewState createState() =>
+      _HomeViewState(key: key, newImage: newImage, title: title);
 }
 
 List<String> images = [
@@ -108,6 +117,25 @@ List<String> images = [
   "images/homework_green.png"
 ];
 
+Route _createRoute() {
+  return PageRouteBuilder(
+    transitionDuration: Duration(milliseconds: 800),
+    pageBuilder: (context, animation, secondaryAnimation) => SearchList(),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      var begin = Offset(0.0, 1.0);
+      var end = Offset.zero;
+      var curve = Curves.ease;
+
+      var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+
+      return SlideTransition(
+        position: animation.drive(tween),
+        child: child,
+      );
+    },
+  );
+}
+
 /// -------------------------------------------------------
 ///
 /// The main screen to display a todo list with a todo side
@@ -115,10 +143,14 @@ List<String> images = [
 ///
 /// -------------------------------------------------------
 class _HomeViewState extends State<HomeView> {
+  String newImage, title;
+
+  _HomeViewState({Key key, @required this.newImage, @required this.title});
+
   @override
   void initState() {
     super.initState();
-    loadLists();
+    loadLists(newImage, title);
   }
 
   @override
@@ -127,8 +159,7 @@ class _HomeViewState extends State<HomeView> {
         floatingActionButton: FloatingActionButton(
           onPressed: () {
             setState(() {
-              Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => SearchList()));
+              Navigator.of(context).push(_createRoute());
 
               /*
               // Random index in the range [0, 20) to pick an image from
@@ -265,11 +296,17 @@ class _HomeViewState extends State<HomeView> {
   }
 }
 
-void loadLists() async {
+void loadLists(String newImage, String title) async {
   // Obtain shared preferences
-  final prefs = await SharedPreferences.getInstance();
+  //final prefs = await SharedPreferences.getInstance();
 
   //prefs.clear();
+
+  todoList = [];
+  doneList = [];
+
+  // Obtain shared preferences
+  final prefs = await SharedPreferences.getInstance();
 
   // Try reading data from the key. If it doesn't exist, return empty list.
   String fetchedToDoList = prefs.getString('todo') ?? "";
@@ -281,8 +318,8 @@ void loadLists() async {
 
   for (TodoItem item in todoItems) {
     /// Add an item to the list of todo item widgets.
-    todoList.add(MoveableStackItem(
-        item.xpos, item.ypos, true, itemCount, item.icon, UniqueKey()));
+    todoList.add(MoveableStackItem(item.xpos, item.ypos, true, itemCount,
+        item.icon, UniqueKey(), item.name));
 
     /// Set the [itemCount] to correspond to the location in [todoList].
     todoMap[itemCount] = todoList.length - 1;
@@ -304,8 +341,8 @@ void loadLists() async {
 
   for (TodoItem item in doneItems) {
     /// Add an item to the list of todo item widgets.
-    doneList.add(MoveableStackItem(
-        item.xpos, item.ypos, false, itemCount, item.icon, UniqueKey()));
+    doneList.add(MoveableStackItem(item.xpos, item.ypos, false, itemCount,
+        item.icon, UniqueKey(), item.name));
 
     /// Set the [itemCount] to correspond to the location in [doneList].
     doneMap[itemCount] = doneList.length - 1;
@@ -313,6 +350,20 @@ void loadLists() async {
     /// Increment the count since an item has been added.
     itemCount++;
     done.value++;
+  }
+
+  if (newImage != "") {
+    /// Add an item to the list of todo item widgets.
+    todoList.add(MoveableStackItem(
+        80, 300, true, itemCount, newImage, UniqueKey(), title));
+    addTodoList(title, 80, 300, newImage, itemCount);
+
+    /// Set the [itemCount] to correspond to the location in [todoList].
+    todoMap[itemCount] = todoList.length - 1;
+
+    /// Increment the count since an item has been added.
+    itemCount++;
+    todo.value++;
   }
 }
 
@@ -335,7 +386,8 @@ void addTodoList(
   // Obtain shared preferences
   final prefs = await SharedPreferences.getInstance();
 
-  todoItems.add(TodoItem(id: id, xpos: xpos, ypos: ypos, icon: icon));
+  todoItems
+      .add(TodoItem(id: id, xpos: xpos, ypos: ypos, icon: icon, name: title));
 
   final String encodedData = TodoItem.encode(todoItems);
 
@@ -387,7 +439,7 @@ void addDoneList(
 /// -------------------------------------------------------
 class MoveableStackItem extends StatefulWidget {
   MoveableStackItem(this.xPosition, this.yPosition, this.isTodo, this.id,
-      this.imageSource, this.key);
+      this.imageSource, this.key, this.title);
 
   double xPosition;
   double yPosition;
@@ -395,11 +447,12 @@ class MoveableStackItem extends StatefulWidget {
   int id;
   Key key;
   String imageSource;
+  String title;
 
   @override
   State<StatefulWidget> createState() {
     return _MoveableStackItemState(
-        xPosition, yPosition, isTodo, id, imageSource, key);
+        xPosition, yPosition, isTodo, id, imageSource, key, title);
   }
 }
 
@@ -408,7 +461,7 @@ class MoveableStackItem extends StatefulWidget {
 /// -------------------------------------------------------
 class _MoveableStackItemState extends State<MoveableStackItem> {
   _MoveableStackItemState(this.xPosition, this.yPosition, this.isTodo, this.id,
-      this.imageSource, this.key);
+      this.imageSource, this.key, this.title);
 
   double xPosition;
   double yPosition;
@@ -416,6 +469,7 @@ class _MoveableStackItemState extends State<MoveableStackItem> {
   int id;
   Key key;
   String imageSource;
+  String title;
 
   // Set to true if an icon has hit the edge to be passed to the other list.
   // Prevents the item from being transferred more than once in a row.
@@ -430,12 +484,81 @@ class _MoveableStackItemState extends State<MoveableStackItem> {
     super.initState();
   }
 
-  void _showPopupMenu(Offset offset) async {
-    // Get the width of the screen.
-    double width = MediaQuery.of(context).size.width;
-    // Get the height of the screen.
-    double height = MediaQuery.of(context).size.height - kToolbarHeight;
+  showAlertDialog(BuildContext context) {
+    // set up the buttons
+    Widget cancelButton = FlatButton(
+      child: Text("Cancel"),
+      onPressed: () {},
+    );
+    Widget continueButton = FlatButton(
+      child: Text("Yes, delete"),
+      onPressed: () {
+        if (isTodo) {
+          // ---------------------------
+          // Remove the item from the todo side.
+          // ---------------------------
+          int location = todoMap[id];
+          todoList.removeAt(location);
+          todoItems.removeAt(location);
+          todoMap.remove(id);
+          // ---------------------------
 
+          // ---------------------------
+          // Update the key map.
+          // ---------------------------
+          for (int key in todoMap.keys) {
+            if (todoMap[key] > location) todoMap[key] = todoMap[key] - 1;
+          }
+          // ---------------------------
+
+          todo.value--;
+        } else {
+          // ---------------------------
+          // Remove the item from the done side.
+          // ---------------------------
+          int location = doneMap[id];
+          doneList.removeAt(location);
+          doneItems.removeAt(location);
+          doneMap.remove(id);
+          // ---------------------------
+
+          // ---------------------------
+          // Update the key map.
+          // ---------------------------
+          for (int key in doneMap.keys) {
+            if (doneMap[key] > location) {
+              doneMap[key] = doneMap[key] - 1;
+            }
+          }
+          // ---------------------------
+
+          done.value--;
+        }
+        saveListStates();
+        Navigator.of(context).pop();
+      },
+    );
+
+    // set up the AlertDialog
+    AlertDialog alert = AlertDialog(
+      title: Text("Deleting item from list"),
+      content: Text("Are you sure you want to delete \"" + title + "\"?"),
+      actions: [
+        cancelButton,
+        continueButton,
+      ],
+    );
+
+    // show the dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return alert;
+      },
+    );
+  }
+
+  void _showPopupMenu(Offset offset) async {
     double left = offset.dx;
     double top = offset.dy;
 
@@ -446,7 +569,7 @@ class _MoveableStackItemState extends State<MoveableStackItem> {
         PopupMenuItem(
           child: Center(
             child: Text(
-              names[imageSource],
+              title,
               style:
                   TextStyle(color: Colors.black, fontWeight: FontWeight.w800),
             ),
@@ -494,48 +617,9 @@ class _MoveableStackItemState extends State<MoveableStackItem> {
 
       case 1:
         print("You selected Delete.");
-        if (isTodo) {
-          // ---------------------------
-          // Remove the item from the todo side.
-          // ---------------------------
-          int location = todoMap[id];
-          todoList.removeAt(location);
-          todoItems.removeAt(location);
-          todoMap.remove(id);
-          // ---------------------------
 
-          // ---------------------------
-          // Update the key map.
-          // ---------------------------
-          for (int key in todoMap.keys) {
-            if (todoMap[key] > location) todoMap[key] = todoMap[key] - 1;
-          }
-          // ---------------------------
+        showAlertDialog(context);
 
-          todo.value--;
-        } else {
-          // ---------------------------
-          // Remove the item from the done side.
-          // ---------------------------
-          int location = doneMap[id];
-          doneList.removeAt(location);
-          doneItems.removeAt(location);
-          doneMap.remove(id);
-          // ---------------------------
-
-          // ---------------------------
-          // Update the key map.
-          // ---------------------------
-          for (int key in doneMap.keys) {
-            if (doneMap[key] > location) {
-              doneMap[key] = doneMap[key] - 1;
-            }
-          }
-          // ---------------------------
-
-          done.value--;
-        }
-        saveListStates();
         break;
     }
   }
@@ -551,9 +635,9 @@ class _MoveableStackItemState extends State<MoveableStackItem> {
       top: yPosition,
       left: xPosition,
       child: GestureDetector(
-        onTapDown: (TapDownDetails details) {
+        onTap: () {
           print("tap");
-          _showPopupMenu(details.globalPosition);
+          _showPopupMenu(Offset(xPosition, yPosition));
         },
         onPanUpdate: (tapInfo) {
           setState(() {
@@ -602,7 +686,7 @@ class _MoveableStackItemState extends State<MoveableStackItem> {
                   // Add the widget onto the todo list.
                   // ---------------------------
                   todoList.add(MoveableStackItem(((width - 180) / 2), yPosition,
-                      true, id, imageSource, UniqueKey()));
+                      true, id, imageSource, UniqueKey(), title));
                   todoItems.add(TodoItem(
                       id: id,
                       xpos: xPosition,
@@ -658,12 +742,13 @@ class _MoveableStackItemState extends State<MoveableStackItem> {
                   // Add the widget onto the done list.
                   // ---------------------------
                   doneList.add(MoveableStackItem((xPosition - (xPosition - 3)),
-                      yPosition, false, id, imageSource, UniqueKey()));
+                      yPosition, false, id, imageSource, UniqueKey(), title));
                   doneItems.add(TodoItem(
                       id: id,
                       xpos: xPosition,
                       ypos: yPosition,
-                      icon: imageSource));
+                      icon: imageSource,
+                      name: title));
                   // ---------------------------
 
                   // Make an entry for that item in the map.

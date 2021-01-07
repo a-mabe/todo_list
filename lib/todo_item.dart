@@ -3,29 +3,32 @@ import 'dart:convert';
 class TodoItem {
   final int id;
   double xpos, ypos;
-  final String icon;
+  final String icon, name;
 
   TodoItem({
+    this.id,
     this.xpos,
     this.ypos,
     this.icon,
-    this.id,
+    this.name,
   });
 
   factory TodoItem.fromJson(Map<String, dynamic> jsonData) {
     return TodoItem(
+      id: jsonData['id'],
       xpos: jsonData['xpos'],
       ypos: jsonData['ypos'],
       icon: jsonData['icon'],
-      id: jsonData['id'],
+      name: jsonData['name'],
     );
   }
 
   static Map<String, dynamic> toMap(TodoItem item) => {
+        'id': item.id,
         'xpos': item.xpos,
         'ypos': item.ypos,
         'icon': item.icon,
-        'id': item.id,
+        'name': item.name,
       };
 
   static String encode(List<TodoItem> items) => json.encode(

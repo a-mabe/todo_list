@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:todo_list/data/images.dart';
 import 'package:todo_list/data/icon_names.dart';
 
+import 'package:todo_list/itemDetails.dart';
+
 class Item {
   String id;
   String name;
@@ -10,8 +12,11 @@ class Item {
   Item({this.id, this.name, this.image});
 }
 
+/// The serch query for choosing icons from the gridview.
 final TextEditingController _searchQuery = TextEditingController();
-bool _IsSearching;
+
+/// True if the user is currently using the search bar.
+bool isSearching;
 
 class SearchList extends StatefulWidget {
   SearchList({Key key}) : super(key: key);
@@ -20,14 +25,21 @@ class SearchList extends StatefulWidget {
 }
 
 class _SearchListState extends State<SearchList> {
-  Widget appBarTitle = TextField(
+  Widget appBarTitle =
+      // --------------------------
+      // Search box.
+      // --------------------------
+      TextField(
     onTap: () {
-      _IsSearching = true;
+      isSearching = true;
     },
     controller: _searchQuery,
     style: TextStyle(
       color: Colors.black87,
     ),
+    // --------------------------
+    // Search box styling to remove lines and shadows.
+    // --------------------------
     decoration: InputDecoration(
         border: InputBorder.none,
         focusedBorder: InputBorder.none,
@@ -39,40 +51,51 @@ class _SearchListState extends State<SearchList> {
         hintText: "Search",
         hintStyle: TextStyle(color: Colors.grey)),
   );
+  // --------------------------
+  // The exit selection/search button.
+  // --------------------------
   Icon actionIcon = Icon(
     Icons.close,
-    color: Colors.grey,
+    color: Colors.black87,
   );
 
+  // --------------------------
+  // Search bar parameters.
+  // --------------------------
   final key = GlobalKey<ScaffoldState>();
   List<Item> itemList;
   List<Item> _searchList = List();
+  // --------------------------
 
   String _searchText = "";
   _SearchListState() {
     _searchQuery.addListener(() {
-      if (_searchQuery.text.isEmpty) {
+      if (_searchQuery.text.isEmpty && this.mounted) {
         setState(() {
-          _IsSearching = false;
+          isSearching = false;
           _searchText = "";
           _buildSearchList();
         });
-      } else {
+      } else if (this.mounted) {
         setState(() {
-          _IsSearching = true;
+          isSearching = true;
           _searchText = _searchQuery.text;
           _buildSearchList();
         });
       }
     });
   }
+
   @override
   void initState() {
     super.initState();
-    _IsSearching = false;
+    isSearching = false;
     init();
   }
 
+  // --------------------------
+  // Initailize the list of items to display in the gridview.
+  // --------------------------
   void init() {
     itemList = List();
 
@@ -83,20 +106,28 @@ class _SearchListState extends State<SearchList> {
 
     _searchList = itemList;
   }
+  // --------------------------
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         key: key,
         appBar: buildBar(context),
-        body: GridView.builder(
-            itemCount: _searchList.length,
-            itemBuilder: (context, index) {
-              return Uiitem(_searchList[index]);
-            },
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-            )));
+        body: new Container(
+            padding: const EdgeInsets.only(
+              left: 15,
+              top: 25,
+              right: 15,
+              bottom: 25,
+            ),
+            child: GridView.builder(
+                itemCount: _searchList.length,
+                itemBuilder: (context, index) {
+                  return Uiitem(_searchList[index]);
+                },
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                ))));
   }
 
   List<Item> _buildSearchList() {
@@ -116,14 +147,18 @@ class _SearchListState extends State<SearchList> {
     return AppBar(
         centerTitle: true,
         title: appBarTitle,
-        iconTheme: IconThemeData(color: Colors.grey),
+        iconTheme: IconThemeData(color: Colors.black87),
         backgroundColor: Colors.white,
         actions: <Widget>[
           IconButton(
             icon: actionIcon,
             onPressed: () {
               setState(() {
-                _handleSearchEnd();
+                if (isSearching) {
+                  _handleSearchEnd();
+                } else {
+                  Navigator.of(context).pop();
+                }
               });
             },
           ),
@@ -132,7 +167,7 @@ class _SearchListState extends State<SearchList> {
 
   void _handleSearchStart() {
     setState(() {
-      _IsSearching = true;
+      isSearching = true;
     });
   }
 
@@ -144,7 +179,7 @@ class _SearchListState extends State<SearchList> {
       );
       this.appBarTitle = TextField(
         onTap: () {
-          _IsSearching = true;
+          isSearching = true;
         },
         controller: _searchQuery,
         style: TextStyle(
@@ -161,7 +196,7 @@ class _SearchListState extends State<SearchList> {
             hintText: "Search",
             hintStyle: TextStyle(color: Colors.grey)),
       );
-      _IsSearching = false;
+      isSearching = false;
       _searchQuery.clear();
       FocusScope.of(context).unfocus();
     });
@@ -175,30 +210,47 @@ class Uiitem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: EdgeInsets.fromLTRB(5, 5, 5, 7),
-      elevation: 10.0,
+      elevation: 1,
       child: InkWell(
-        splashColor: Colors.black87,
+        splashColor: Color(0xff00c29a),
         onTap: () {
           print(item.id);
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) =>
+                      HomePage(image: item.image, name: item.name)));
         },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
+            Container(
+              padding: const EdgeInsets.only(
+                left: 0,
+                top: 15,
+                right: 0,
+                bottom: 0,
+              ),
+            ),
             Center(
                 child: Image.asset(
               item.image,
-              width: 50,
+              width: 60,
             )),
             Padding(
-              padding: EdgeInsets.fromLTRB(10.0, 15.0, 0.0, 0.0),
+              padding: EdgeInsets.fromLTRB(0, 15, 0, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(
-                    this.item.name,
-                    style:
-                        TextStyle(fontWeight: FontWeight.bold, fontSize: 14.0),
-                    maxLines: 1,
+                  Center(
+                    child: Text(
+                      this.item.name,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10.0,
+                          color: Colors.black54),
+                    ),
                   ),
                   SizedBox(height: 0.0),
                 ],
@@ -219,6 +271,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         // Define the default brightness and colors.
         brightness: Brightness.light,
