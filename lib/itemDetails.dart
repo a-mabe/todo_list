@@ -76,6 +76,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: new AppBar(
           backgroundColor: Colors.white,
           title: new Text(
@@ -108,8 +109,10 @@ class _HomePageState extends State<HomePage> {
                 TextFormField(
                   style: TextStyle(fontSize: 22.0, color: Colors.black87),
                   decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Color(0xfff0f0f0),
                     labelStyle: TextStyle(
-                      color: Colors.grey,
+                      color: Color(0xff00c29a),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.all(Radius.circular(20)),
@@ -127,11 +130,12 @@ class _HomePageState extends State<HomePage> {
                         )),
                     errorBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(20)),
-                        borderSide: BorderSide(width: 1, color: Colors.black)),
+                        borderSide:
+                            BorderSide(width: 1, color: Color(0xffff8066))),
                     focusedErrorBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(20)),
                         borderSide:
-                            BorderSide(width: 1, color: Colors.yellowAccent)),
+                            BorderSide(width: 1, color: Color(0xffff8066))),
                     contentPadding: EdgeInsets.fromLTRB(30, 20, 30, 15),
                     labelText: "Title",
                   ),
@@ -155,10 +159,37 @@ class _HomePageState extends State<HomePage> {
                 ),
                 //text input
                 TextFormField(
-                  style: TextStyle(fontSize: 18.0, color: Colors.black87),
+                  style: TextStyle(fontSize: 20.0, color: Colors.black87),
                   decoration: InputDecoration(
+                    filled: true,
+                    fillColor: Color(0xfff0f0f0),
+                    labelStyle: TextStyle(
+                      color: Colors.black54,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(20)),
+                      borderSide:
+                          BorderSide(width: 1, color: Color(0xff00c29a)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(20)),
+                      borderSide: BorderSide(width: 1, color: Colors.grey),
+                    ),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(20)),
+                        borderSide: BorderSide(
+                          width: 1,
+                        )),
+                    errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(20)),
+                        borderSide:
+                            BorderSide(width: 1, color: Color(0xffff8066))),
+                    focusedErrorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(20)),
+                        borderSide:
+                            BorderSide(width: 1, color: Color(0xffff8066))),
+                    contentPadding: EdgeInsets.fromLTRB(30, 20, 30, 15),
                     labelText: "Details (optional)",
-                    contentPadding: EdgeInsets.fromLTRB(10, 15, 10, 15),
                   ),
                   keyboardType: TextInputType.multiline,
                   maxLines: null,
@@ -167,19 +198,55 @@ class _HomePageState extends State<HomePage> {
                 SizedBox(
                   height: MediaQuery.of(context).size.width * 0.1,
                 ),
-                RaisedButton(
-                  padding: EdgeInsets.symmetric(
-                    vertical: 10.0,
-                    horizontal: 15.0,
-                  ),
-                  child: Text(
-                    "Submit",
-                    style: TextStyle(
-                      fontSize: 24.0,
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 5,
+                      child: FlatButton(
+                        shape: Border(
+                            bottom:
+                                BorderSide(color: Color(0xffff8066), width: 2)),
+                        //color: Colors.white,
+                        padding: EdgeInsets.symmetric(
+                          vertical: 15.0,
+                          horizontal: 20.0,
+                        ),
+                        child: Text(
+                          "Cancel",
+                          style: TextStyle(
+                            fontSize: 24.0,
+                            color: Color(0xffff8066),
+                            fontWeight: FontWeight.normal,
+                          ),
+                        ),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
                     ),
-                  ),
-                  onPressed: () => _submit(),
-                )
+                    Expanded(child: Container(), flex: 1),
+                    Expanded(
+                      flex: 5,
+                      child: FlatButton(
+                        shape: Border(
+                            bottom:
+                                BorderSide(color: Color(0xff00c29a), width: 2)),
+                        //color: Colors.white,
+                        padding: EdgeInsets.symmetric(
+                          vertical: 15.0,
+                          horizontal: 20.0,
+                        ),
+                        child: Text(
+                          "Submit",
+                          style: TextStyle(
+                            fontSize: 24.0,
+                            color: Color(0xff00c29a),
+                            fontWeight: FontWeight.normal,
+                          ),
+                        ),
+                        onPressed: () => _submit(),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),

@@ -3,14 +3,17 @@ import 'dart:convert';
 
 import 'package:screen_loader/screen_loader.dart';
 
-import 'package:todo_list/todo_item.dart';
+import 'package:todo_list/data/todo_item.dart';
 import 'package:todo_list/data/icon_names.dart';
 import 'package:todo_list/addItem.dart';
+import 'package:todo_list/data/database_helper.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
+
+import 'package:todo_list/data/todo_list.dart';
 
 void main() => runApp(MyApp());
 
@@ -296,12 +299,62 @@ class _HomeViewState extends State<HomeView> {
   }
 }
 
+int todoListID;
+
 void loadLists(String newImage, String title) async {
+  //String encodedData = TodoItem.encode(todoItems);
+
+  //await DatabaseHelper.instance.insertTodo(TodoList(
+  //listName: "test_list", items: encodedData, count: todoItems.length));
+
+  todoList = [];
+  doneList = [];
+
+  List<TodoList> todos = await DatabaseHelper.instance.retrieveTodos();
+
+  print(todos[0].listName);
+
+  List<TodoItem> decodedData = TodoItem.decode(todos[0].items);
+
+  print(decodedData);
+
+  todoItems = decodedData;
+
+  todoListID = todos[0].id;
+
+  for (TodoItem item in todoItems) {
+    /// Add an item to the list of todo item widgets.
+    todoList.add(MoveableStackItem(item.xpos, item.ypos, true, itemCount,
+        item.icon, UniqueKey(), item.name));
+
+    /// Set the [itemCount] to correspond to the location in [todoList].
+    todoMap[itemCount] = todoList.length - 1;
+
+    /// Increment the count since an item has been added.
+    itemCount++;
+    todo.value++;
+  }
+
+  if (newImage != "") {
+    /// Add an item to the list of todo item widgets.
+    todoList.add(MoveableStackItem(
+        80, 300, true, itemCount, newImage, UniqueKey(), title));
+    addTodoList(title, 80, 300, newImage, itemCount);
+
+    /// Set the [itemCount] to correspond to the location in [todoList].
+    todoMap[itemCount] = todoList.length - 1;
+
+    /// Increment the count since an item has been added.
+    itemCount++;
+    todo.value++;
+  }
+
   // Obtain shared preferences
   //final prefs = await SharedPreferences.getInstance();
 
   //prefs.clear();
 
+/*
   todoList = [];
   doneList = [];
 
@@ -365,6 +418,7 @@ void loadLists(String newImage, String title) async {
     itemCount++;
     todo.value++;
   }
+  */
 }
 
 /// -------------------------------------------------------
@@ -383,6 +437,22 @@ void loadLists(String newImage, String title) async {
 /// -------------------------------------------------------
 void addTodoList(
     String title, double xpos, double ypos, String icon, int id) async {
+  todoItems
+      .add(TodoItem(id: id, xpos: xpos, ypos: ypos, icon: icon, name: title));
+
+  String encodedData = TodoItem.encode(todoItems);
+
+  TodoList list = TodoList(
+      id: todoListID,
+      listName: "test_list",
+      items: encodedData,
+      count: todoItems.length);
+
+  print(list.items);
+
+  await DatabaseHelper.instance.updateTodo(list);
+
+  /*
   // Obtain shared preferences
   final prefs = await SharedPreferences.getInstance();
 
@@ -392,20 +462,35 @@ void addTodoList(
   final String encodedData = TodoItem.encode(todoItems);
 
   prefs.setString('todo', encodedData);
+  */
 }
 
 /// -------------------------------------------------------
 ///
 /// -------------------------------------------------------
 void saveListStates() async {
+  //todoItems.add(TodoItem(id: id, xpos: xpos, ypos: ypos, icon: icon, name: title));
+
+  String encodedData = TodoItem.encode(todoItems);
+
+  TodoList list = TodoList(
+      id: todoListID,
+      listName: "test_list",
+      items: encodedData,
+      count: todoItems.length);
+
+  await DatabaseHelper.instance.updateTodo(list);
+
+  print("Updated list");
+
   // Obtain shared preferences
-  final prefs = await SharedPreferences.getInstance();
+  /*final prefs = await SharedPreferences.getInstance();
 
   final String encodedTodo = TodoItem.encode(todoItems);
-  final String encodedDone = TodoItem.encode(doneItems);
+  final String encodedDone = TodoIokaytem.encode(doneItems);
 
   prefs.setString('todo', encodedTodo);
-  prefs.setString('done', encodedDone);
+  prefs.setString('done', encodedDone);*/
 }
 
 /// -------------------------------------------------------
@@ -635,9 +720,9 @@ class _MoveableStackItemState extends State<MoveableStackItem> {
       top: yPosition,
       left: xPosition,
       child: GestureDetector(
-        onTap: () {
+        onTapUp: (tapUpDetails) {
           print("tap");
-          _showPopupMenu(Offset(xPosition, yPosition));
+          _showPopupMenu(tapUpDetails.globalPosition);
         },
         onPanUpdate: (tapInfo) {
           setState(() {
