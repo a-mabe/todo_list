@@ -1,328 +1,91 @@
-import 'dart:collection';
-import 'dart:convert';
-
-import 'package:screen_loader/screen_loader.dart';
-
-import 'package:todo_list/data/todo_item.dart';
-import 'package:todo_list/data/icon_names.dart';
-import 'package:todo_list/addItem.dart';
-import 'package:todo_list/data/database_helper.dart';
-
-import 'package:flutter/foundation.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:math';
+import 'package:flutter_reorderable_list/flutter_reorderable_list.dart';
 
 import 'package:todo_list/data/todo_list.dart';
+import 'package:todo_list/data/database_helper.dart';
+import 'package:todo_list/view_list.dart';
+import 'package:todo_list/name_list.dart';
 
-void main() => runApp(MyApp());
-
-/// List of todo item widgets.
-List<Widget> todoList = [];
-
-/// List of completed todo item widgets.
-List<Widget> doneList = [];
-
-/// List of todo items. Used to store and load the
-/// todo list from disk.
-List<TodoItem> todoItems = [];
-
-/// List of completed todo items. Used to store and load the
-/// completed items from disk.
-List<TodoItem> doneItems = [];
-
-/// The number of total todo items that have existed in the list,
-/// whether completed or uncompleted.
-int itemCount = 0;
-
-/// Value notifier for the todo list. Increments whenever something
-/// is added to the list to change the widget Stack state.
-final todo = new ValueNotifier<int>(todoList.length);
-
-/// Value notifier for the done list.
-final done = new ValueNotifier<int>(doneList.length);
-
-/// Maps the ID of each todo item to its location in the list.
-Map<int, int> todoMap = HashMap();
-
-/// Maps the ID of each completed todo item to its location in the list.
-Map<int, int> doneMap = HashMap();
-
-/// Random number generator to randomly select an image from the list.
-final _random = new Random();
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized(); //all widgets are rendered here
+  await loadLists();
+  runApp(MyApp());
+}
 
 class MyApp extends StatelessWidget {
+  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Draggable',
-        home: HomeView(newImage: "", title: ""),
-        theme: ThemeData(
-          // Define the default brightness and colors.
-          brightness: Brightness.light,
-          primaryColor: Color(0xffff8066),
-          accentColor: Color(0xff00c29a),
-          primaryColorLight: Color(0xffff8066).withOpacity(0.4),
-          backgroundColor: Color(0xff00c29a).withOpacity(0.4),
+      title: 'Flutter Rerderable List',
+      theme: ThemeData(
+        // Define the default brightness and colors.
+        brightness: Brightness.light,
+        primaryColor: Color(0xffff8066),
+        accentColor: Color(0xff00c29a),
+        primaryColorLight: Color(0xffff8066).withOpacity(0.4),
+        backgroundColor: Color(0xff00c29a).withOpacity(0.4),
 
-          // Define the default font family.
-          fontFamily: 'Arial',
+        // Define the default font family.
+        fontFamily: 'Arial',
 
-          // Define the default TextTheme. Use this to specify the default
-          // text styling for headlines, titles, bodies of text, and more.
-          primaryTextTheme: TextTheme(
-            headline1: TextStyle(
-                fontSize: 50.0,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey),
-            headline6: TextStyle(fontSize: 24.0, color: Colors.grey),
-            bodyText2: TextStyle(
-                fontSize: 14.0, fontFamily: 'Hind', color: Colors.grey),
-          ),
-        ));
-  }
-}
-
-class HomeView extends StatefulWidget {
-  final String newImage, title;
-
-  HomeView({Key key, @required this.newImage, @required this.title})
-      : super(key: key);
-
-  @override
-  _HomeViewState createState() =>
-      _HomeViewState(key: key, newImage: newImage, title: title);
-}
-
-List<String> images = [
-  "images/sink.png",
-  "images/mop.png",
-  "images/walk_dog.png",
-  "images/iron.png",
-  "images/homework_blue.png",
-  "images/homework_purple.png",
-  "images/sweep.png",
-  "images/wash_car.png",
-  "images/wash_clothes.png",
-  "images/email.png",
-  "images/feed_dog.png",
-  "images/trash.png",
-  "images/grocery_shopping.png",
-  "images/dishes.png",
-  "images/dust.png",
-  "images/vacuum.png",
-  "images/toilet.png",
-  "images/homework_red.png",
-  "images/fold_laundry.png",
-  "images/tub.png",
-  "images/lightbulb.png",
-  "images/homework_green.png"
-];
-
-Route _createRoute() {
-  return PageRouteBuilder(
-    transitionDuration: Duration(milliseconds: 800),
-    pageBuilder: (context, animation, secondaryAnimation) => SearchList(),
-    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      var begin = Offset(0.0, 1.0);
-      var end = Offset.zero;
-      var curve = Curves.ease;
-
-      var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-
-      return SlideTransition(
-        position: animation.drive(tween),
-        child: child,
-      );
-    },
-  );
-}
-
-/// -------------------------------------------------------
-///
-/// The main screen to display a todo list with a todo side
-/// and a done side.
-///
-/// -------------------------------------------------------
-class _HomeViewState extends State<HomeView> {
-  String newImage, title;
-
-  _HomeViewState({Key key, @required this.newImage, @required this.title});
-
-  @override
-  void initState() {
-    super.initState();
-    loadLists(newImage, title);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            setState(() {
-              Navigator.of(context).push(_createRoute());
-
-              /*
-              // Random index in the range [0, 20) to pick an image from
-              // the list of possible icons.
-              String image = images[next(0, 22)];
-
-              /// Add an item to the list of todo item widgets.
-              todoList.add(MoveableStackItem(
-                  80, 300, true, itemCount, image, UniqueKey()));
-
-              /// Set the [itemCount] to correspond to the location in [todoList].
-              todoMap[itemCount] = todoList.length - 1;
-
-              /// Add the [TodoItem] to [todoItems].
-              addTodoList("gshopping", 80, 300, image, itemCount);
-
-              /// Increment the count since an item has been added.
-              itemCount++;
-              */
-            });
-          },
+        // Define the default TextTheme. Use this to specify the default
+        // text styling for headlines, titles, bodies of text, and more.
+        primaryTextTheme: TextTheme(
+          headline1: TextStyle(
+              fontSize: 50.0, fontWeight: FontWeight.bold, color: Colors.grey),
+          headline6: TextStyle(fontSize: 24.0, color: Colors.grey),
+          bodyText2:
+              TextStyle(fontSize: 14.0, fontFamily: 'Hind', color: Colors.grey),
         ),
-        body:
-            // --------------------------
-            // Add padding.
-            // --------------------------
-            new Container(
-                padding: const EdgeInsets.only(
-                  left: 9,
-                  top: 60,
-                  right: 9,
-                  bottom: 20,
-                ),
-                // --------------------------
-                // Row to display the side by side containers.
-                // --------------------------
-                child: Row(
-                  // --------------------------
-                  // List of the two side by side containers
-                  // as children of the Row.
-                  // --------------------------
-                  children: <Widget>[
-                    // --------------------------
-                    // Expanded to fill up appr. half the screen.
-                    // --------------------------
-                    Expanded(
-                      // --------------------------
-                      // Contents of Expanded will update each
-                      // time a value is updated.
-                      // --------------------------
-                      child: ValueListenableBuilder<int>(
-                        valueListenable:
-                            todo, // Rebuild each time an item is added.
-                        builder: (context, value, child) {
-                          // Builder: Content to be rebuilt.
-                          // --------------------------
-                          // Fractionally sized to fill entire space given.
-                          // --------------------------
-                          return FractionallySizedBox(
-                            alignment: Alignment
-                                .centerLeft, // Doesn't matter, take up all space anyways.
-                            widthFactor: 1, // Take up all possible space.
-                            // --------------------------
-                            // Container to manage the actual todo stack.
-                            // --------------------------
-                            child: Container(
-                              child: Stack(
-                                children: todoList, // The list of todo widgets.
-                              ),
-                              height: 1000, // Take up a lot of the screen.
-                              margin: const EdgeInsets.all(6),
-                              // --------------------------
-                              // --------------------------
-                              decoration: BoxDecoration(
-                                  color: Theme.of(context).primaryColorLight,
-                                  border: Border.all(
-                                    color: Theme.of(context).primaryColor,
-                                    width: 3,
-                                  ),
-                                  borderRadius:
-                                      BorderRadius.all(Radius.circular(20))),
-                              // --------------------------
-                              // --------------------------
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    // --------------------------
-                    // Expanded to fill up appr. half the screen.
-                    // --------------------------
-                    Expanded(
-                      // --------------------------
-                      // Contents of Expanded will update each
-                      // time a value is updated.
-                      // --------------------------
-                      child: ValueListenableBuilder<int>(
-                        valueListenable: done,
-                        builder: (context, value, child) {
-                          // --------------------------
-                          // Fractionally sized to fill entire space given.
-                          // --------------------------
-                          return FractionallySizedBox(
-                            alignment: Alignment.centerLeft,
-                            widthFactor: 1,
-                            // --------------------------
-                            // Container to manage the actual todo stack.
-                            // --------------------------
-                            child: Container(
-                              child: Stack(
-                                children: doneList,
-                              ),
-                              height: 1000,
-                              margin: const EdgeInsets.all(6),
-                              // --------------------------
-                              // --------------------------
-                              decoration: BoxDecoration(
-                                  color: Theme.of(context).backgroundColor,
-                                  border: Border.all(
-                                    color: Theme.of(context).accentColor,
-                                    width: 3,
-                                  ),
-                                  borderRadius:
-                                      BorderRadius.all(Radius.circular(20))),
-                              // --------------------------
-                              // --------------------------
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                )));
+      ),
+      home: MyHomePage(title: 'Flutter Reorderable List'),
+    );
   }
 }
 
-int todoListID;
+class MyHomePage extends StatefulWidget {
+  MyHomePage({Key key, this.title}) : super(key: key);
 
-void loadLists(String newImage, String title) async {
+  final String title;
+
+  @override
+  _MyHomePageState createState() => _MyHomePageState();
+}
+
+class ItemData {
+  ItemData(this.title, this.key);
+
+  final String title;
+
+  // Each item in reorderable list needs stable and unique key
+  final Key key;
+}
+
+enum DraggingMode {
+  iOS,
+  Android,
+}
+
+final numItems = new ValueNotifier<int>(0);
+
+void loadLists() async {
   //String encodedData = TodoItem.encode(todoItems);
 
   //await DatabaseHelper.instance.insertTodo(TodoList(
   //listName: "test_list", items: encodedData, count: todoItems.length));
 
-  todoList = [];
-  doneList = [];
+  _items = List();
 
   List<TodoList> todos = await DatabaseHelper.instance.retrieveTodos();
 
-  print(todos[0].listName);
+  // For each list that existed in the database
+  for (int i = 0; i < todos.length; i++) {
+    print(todos[i].listName);
+    _items.add(ItemData(todos[i].listName, ValueKey(i)));
 
-  List<TodoItem> decodedData = TodoItem.decode(todos[0].items);
-
-  print(decodedData);
-
-  todoItems = decodedData;
-
-  todoListID = todos[0].id;
-
-  for (TodoItem item in todoItems) {
+    /*
     /// Add an item to the list of todo item widgets.
     todoList.add(MoveableStackItem(item.xpos, item.ypos, true, itemCount,
         item.icon, UniqueKey(), item.name));
@@ -333,20 +96,7 @@ void loadLists(String newImage, String title) async {
     /// Increment the count since an item has been added.
     itemCount++;
     todo.value++;
-  }
-
-  if (newImage != "") {
-    /// Add an item to the list of todo item widgets.
-    todoList.add(MoveableStackItem(
-        80, 300, true, itemCount, newImage, UniqueKey(), title));
-    addTodoList(title, 80, 300, newImage, itemCount);
-
-    /// Set the [itemCount] to correspond to the location in [todoList].
-    todoMap[itemCount] = todoList.length - 1;
-
-    /// Increment the count since an item has been added.
-    itemCount++;
-    todo.value++;
+    */
   }
 
   // Obtain shared preferences
@@ -419,478 +169,276 @@ void loadLists(String newImage, String title) async {
     todo.value++;
   }
   */
+
+  numItems.value++;
+  print(_items);
 }
 
-/// -------------------------------------------------------
-/// Adds a todo item to the todo list to be stored on disk. The [xpos] and
-/// [ypos] parameters are set so that the icons load exactly where the user
-/// left them. [title] and [icon] are also set to display the proper item.
-/// To keep track of which item it is, [id] is also set.
-///
-/// Example todo list structure with grocery shopping entry:
-///
-/// "todoList": [ "gshopping": {"xpos": "100",
-///                             "ypos": "100",
-///                             "icon": "images/grocery_shopping.png",
-///                             "id": "2"}
-///             ]
-/// -------------------------------------------------------
-void addTodoList(
-    String title, double xpos, double ypos, String icon, int id) async {
-  todoItems
-      .add(TodoItem(id: id, xpos: xpos, ypos: ypos, icon: icon, name: title));
+List<ItemData> _items = List();
 
-  String encodedData = TodoItem.encode(todoItems);
+class _MyHomePageState extends State<MyHomePage> {
+  _MyHomePageState() {
+    // Get lists from database
 
-  TodoList list = TodoList(
-      id: todoListID,
-      listName: "test_list",
-      items: encodedData,
-      count: todoItems.length);
+    /*setState(() {
+      loadLists();
+    });*/
 
-  print(list.items);
-
-  await DatabaseHelper.instance.updateTodo(list);
-
-  /*
-  // Obtain shared preferences
-  final prefs = await SharedPreferences.getInstance();
-
-  todoItems
-      .add(TodoItem(id: id, xpos: xpos, ypos: ypos, icon: icon, name: title));
-
-  final String encodedData = TodoItem.encode(todoItems);
-
-  prefs.setString('todo', encodedData);
-  */
-}
-
-/// -------------------------------------------------------
-///
-/// -------------------------------------------------------
-void saveListStates() async {
-  //todoItems.add(TodoItem(id: id, xpos: xpos, ypos: ypos, icon: icon, name: title));
-
-  String encodedData = TodoItem.encode(todoItems);
-
-  TodoList list = TodoList(
-      id: todoListID,
-      listName: "test_list",
-      items: encodedData,
-      count: todoItems.length);
-
-  await DatabaseHelper.instance.updateTodo(list);
-
-  print("Updated list");
-
-  // Obtain shared preferences
-  /*final prefs = await SharedPreferences.getInstance();
-
-  final String encodedTodo = TodoItem.encode(todoItems);
-  final String encodedDone = TodoIokaytem.encode(doneItems);
-
-  prefs.setString('todo', encodedTodo);
-  prefs.setString('done', encodedDone);*/
-}
-
-/// -------------------------------------------------------
-/// Adds a todo item to the todo list to be stored on disk. The [xpos] and
-/// [ypos] parameters are set so that the icons load exactly where the user
-/// left them. [title] and [icon] are also set to display the proper item.
-/// To keep track of which item it is, [id] is also set.
-///
-/// Example todo list structure with grocery shopping entry:
-///
-/// "todoList": [ "gshopping": {"xpos": "100",
-///                             "ypos": "100",
-///                             "icon": "images/grocery_shopping.png",
-///                             "id": "2"}
-///             ]
-/// -------------------------------------------------------
-void addDoneList(
-    String title, double xpos, double ypos, String icon, int id) async {
-  // Obtain shared preferences
-  final prefs = await SharedPreferences.getInstance();
-
-  doneItems.add(TodoItem(id: id, xpos: xpos, ypos: ypos, icon: icon));
-
-  final String encodedData = TodoItem.encode(doneItems);
-
-  prefs.setString('done', encodedData);
-}
-
-/// -------------------------------------------------------
-///
-/// -------------------------------------------------------
-class MoveableStackItem extends StatefulWidget {
-  MoveableStackItem(this.xPosition, this.yPosition, this.isTodo, this.id,
-      this.imageSource, this.key, this.title);
-
-  double xPosition;
-  double yPosition;
-  bool isTodo;
-  int id;
-  Key key;
-  String imageSource;
-  String title;
-
-  @override
-  State<StatefulWidget> createState() {
-    return _MoveableStackItemState(
-        xPosition, yPosition, isTodo, id, imageSource, key, title);
-  }
-}
-
-/// -------------------------------------------------------
-///
-/// -------------------------------------------------------
-class _MoveableStackItemState extends State<MoveableStackItem> {
-  _MoveableStackItemState(this.xPosition, this.yPosition, this.isTodo, this.id,
-      this.imageSource, this.key, this.title);
-
-  double xPosition;
-  double yPosition;
-  bool isTodo;
-  int id;
-  Key key;
-  String imageSource;
-  String title;
-
-  // Set to true if an icon has hit the edge to be passed to the other list.
-  // Prevents the item from being transferred more than once in a row.
-  bool hitEdge = false;
-
-  bool transferred = false;
-
-  var selected;
-
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  showAlertDialog(BuildContext context) {
-    // set up the buttons
-    Widget cancelButton = FlatButton(
-      child: Text("Cancel"),
-      onPressed: () {},
-    );
-    Widget continueButton = FlatButton(
-      child: Text("Yes, delete"),
-      onPressed: () {
-        if (isTodo) {
-          // ---------------------------
-          // Remove the item from the todo side.
-          // ---------------------------
-          int location = todoMap[id];
-          todoList.removeAt(location);
-          todoItems.removeAt(location);
-          todoMap.remove(id);
-          // ---------------------------
-
-          // ---------------------------
-          // Update the key map.
-          // ---------------------------
-          for (int key in todoMap.keys) {
-            if (todoMap[key] > location) todoMap[key] = todoMap[key] - 1;
-          }
-          // ---------------------------
-
-          todo.value--;
-        } else {
-          // ---------------------------
-          // Remove the item from the done side.
-          // ---------------------------
-          int location = doneMap[id];
-          doneList.removeAt(location);
-          doneItems.removeAt(location);
-          doneMap.remove(id);
-          // ---------------------------
-
-          // ---------------------------
-          // Update the key map.
-          // ---------------------------
-          for (int key in doneMap.keys) {
-            if (doneMap[key] > location) {
-              doneMap[key] = doneMap[key] - 1;
-            }
-          }
-          // ---------------------------
-
-          done.value--;
-        }
-        saveListStates();
-        Navigator.of(context).pop();
-      },
-    );
-
-    // set up the AlertDialog
-    AlertDialog alert = AlertDialog(
-      title: Text("Deleting item from list"),
-      content: Text("Are you sure you want to delete \"" + title + "\"?"),
-      actions: [
-        cancelButton,
-        continueButton,
-      ],
-    );
-
-    // show the dialog
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return alert;
-      },
-    );
-  }
-
-  void _showPopupMenu(Offset offset) async {
-    double left = offset.dx;
-    double top = offset.dy;
-
-    selected = await showMenu(
-      context: context,
-      position: RelativeRect.fromLTRB(left, top, 100000, 0),
-      items: [
-        PopupMenuItem(
-          child: Center(
-            child: Text(
-              title,
-              style:
-                  TextStyle(color: Colors.black, fontWeight: FontWeight.w800),
-            ),
-          ),
-          enabled: false,
-        ),
-        PopupMenuItem(
-          child: Center(
-              child: Column(
-            children: [
-              Image.asset(
-                imageSource,
-                width: 50.0,
-              ),
-              Container(
-                padding: const EdgeInsets.only(
-                  left: 0,
-                  top: 14,
-                  right: 0,
-                  bottom: 0,
-                ),
-              ),
-              Text(
-                "Edit",
-                style: TextStyle(color: Colors.black87),
-              ),
-            ],
-          )),
-        ),
-        PopupMenuItem(
-          child: Center(
-            child: Text(
-              "Delete",
-              style: TextStyle(color: Colors.red),
-            ),
-          ),
-          value: 1,
-        ),
-      ],
-      elevation: 8.0,
-    );
-
-    switch (selected) {
-      case 0:
-
-      case 1:
-        print("You selected Delete.");
-
-        showAlertDialog(context);
-
-        break;
+    /*
+    for (int i = 0; i < 20; ++i) {
+      String label = "List item $i";
+      if (i == 5) {
+        label += ". This item has a long label and will be wrapped.";
+      }
+      _items.add(ItemData(label, ValueKey(i)));
     }
+    */
   }
 
-  @override
+  // Returns index of item with given key
+  int _indexOfKey(Key key) {
+    return _items.indexWhere((ItemData d) => d.key == key);
+  }
+
+  bool _reorderCallback(Key item, Key newPosition) {
+    int draggingIndex = _indexOfKey(item);
+    int newPositionIndex = _indexOfKey(newPosition);
+
+    // Uncomment to allow only even target reorder possition
+    // if (newPositionIndex % 2 == 1)
+    //   return false;
+
+    final draggedItem = _items[draggingIndex];
+    setState(() {
+      debugPrint("Reordering $item -> $newPosition");
+      _items.removeAt(draggingIndex);
+      _items.insert(newPositionIndex, draggedItem);
+    });
+    return true;
+  }
+
+  void _reorderDone(Key item) {
+    final draggedItem = _items[_indexOfKey(item)];
+    debugPrint("Reordering finished for ${draggedItem.title}}");
+  }
+
+  //
+  // Reordering works by having ReorderableList widget in hierarchy
+  // containing ReorderableItems widgets
+  //
+
+  DraggingMode _draggingMode = DraggingMode.iOS;
+
   Widget build(BuildContext context) {
-    // Get the width of the screen.
-    double width = MediaQuery.of(context).size.width;
-    // Get the height of the screen.
-    double height = MediaQuery.of(context).size.height - kToolbarHeight;
-
-    return Positioned(
-      top: yPosition,
-      left: xPosition,
-      child: GestureDetector(
-        onTapUp: (tapUpDetails) {
-          print("tap");
-          _showPopupMenu(tapUpDetails.globalPosition);
-        },
-        onPanUpdate: (tapInfo) {
+    return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
           setState(() {
-            // Update the position of the widget.
-            xPosition += tapInfo.delta.dx;
-            yPosition += tapInfo.delta.dy;
-
-            // If the widget is being dragged past the bottom.
-            if (yPosition > (height - 92)) {
-              yPosition = (height - 92);
-            }
-            // If the widget is being dragged past the top.
-            if (yPosition < 0) {
-              yPosition = 0;
-            }
-            // If the widget is being dragged to the left and is a completed item.
-            // This means the item is being dragged back on the todo side.
-            if (xPosition < -15 && !isTodo) {
-              xPosition = -15;
-
-              // If it is the first time the widget is being bumped to the lefthand side.
-              if (!hitEdge && !isTodo) {
-                setState(() {
-                  transferred = true;
-
-                  // ---------------------------
-                  // Remove the item from the done side.
-                  // ---------------------------
-                  int location = doneMap[id];
-                  doneList.removeAt(location);
-                  doneItems.removeAt(location);
-                  doneMap.remove(id);
-                  // ---------------------------
-
-                  // ---------------------------
-                  // Update the key map.
-                  // ---------------------------
-                  for (int key in doneMap.keys) {
-                    if (doneMap[key] > location) {
-                      doneMap[key] = doneMap[key] - 1;
-                    }
-                  }
-                  // ---------------------------
-
-                  // ---------------------------
-                  // Add the widget onto the todo list.
-                  // ---------------------------
-                  todoList.add(MoveableStackItem(((width - 180) / 2), yPosition,
-                      true, id, imageSource, UniqueKey(), title));
-                  todoItems.add(TodoItem(
-                      id: id,
-                      xpos: xPosition,
-                      ypos: yPosition,
-                      icon: imageSource));
-                  // ---------------------------
-
-                  // Make an entry for that item in the map.
-                  todoMap[id] = todoList.length - 1;
-
-                  // Update values to refresh UI.
-                  done.value--;
-                  todo.value++;
-                });
-              }
-
-              hitEdge = true;
-            }
-            // If we're on the todo side, just keep the widget in the boundary.
-            else if (xPosition < 0 && isTodo) {
-              xPosition = 0;
-            }
-
-            // If the widget is being dragged to the right and is an uncompleted item.
-            // This means the item is being dragged onto the done side.
-            if (xPosition > ((width - 105) / 2) && isTodo) {
-              xPosition = ((width - 105) / 2);
-
-              // If it is the first time the widget is being bumped to the righthand side.
-              if (!hitEdge && isTodo) {
-                setState(() {
-                  transferred = true;
-
-                  // ---------------------------
-                  // Remove the item from the todo side.
-                  // ---------------------------
-                  int location = todoMap[id];
-                  todoList.removeAt(location);
-                  todoItems.removeAt(location);
-                  todoMap.remove(id);
-                  // ---------------------------
-
-                  // ---------------------------
-                  // Update the key map.
-                  // ---------------------------
-                  for (int key in todoMap.keys) {
-                    if (todoMap[key] > location)
-                      todoMap[key] = todoMap[key] - 1;
-                  }
-                  // ---------------------------
-
-                  // ---------------------------
-                  // Add the widget onto the done list.
-                  // ---------------------------
-                  doneList.add(MoveableStackItem((xPosition - (xPosition - 3)),
-                      yPosition, false, id, imageSource, UniqueKey(), title));
-                  doneItems.add(TodoItem(
-                      id: id,
-                      xpos: xPosition,
-                      ypos: yPosition,
-                      icon: imageSource,
-                      name: title));
-                  // ---------------------------
-
-                  // Make an entry for that item in the map.
-                  doneMap[id] = doneList.length - 1;
-
-                  // Update values to refresh UI.
-                  done.value++;
-                  todo.value--;
-                });
-              }
-
-              hitEdge = true;
-            }
-            // If we're on the done side, just keep the widget in the boundary.
-            else if (xPosition > ((width - 170) / 2) && !isTodo) {
-              xPosition = ((width - 170) / 2);
-            }
+            Navigator.of(context).push(_createNewListRoute());
           });
         },
-        onPanEnd: (tapInfo) {
-          hitEdge = false;
-
-          if (isTodo && !transferred) {
-            todoItems[todoMap[id]].xpos = xPosition;
-            todoItems[todoMap[id]].ypos = yPosition;
-          } else if (!isTodo && !transferred) {
-            doneItems[doneMap[id]].xpos = xPosition;
-            doneItems[doneMap[id]].ypos = yPosition;
-          }
-
-          saveListStates();
-        },
-        child: DragItem(imageSource),
       ),
+      body: ValueListenableBuilder<int>(
+          valueListenable: numItems,
+          builder: (context, value, child) {
+            return ReorderableList(
+              onReorder: this._reorderCallback,
+              onReorderDone: this._reorderDone,
+              child: CustomScrollView(
+                // cacheExtent: 3000,
+                slivers: <Widget>[
+                  SliverAppBar(
+                    actions: <Widget>[
+                      PopupMenuButton<DraggingMode>(
+                        child: Container(
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.symmetric(horizontal: 30.0),
+                          child: Text("Options"),
+                        ),
+                        initialValue: _draggingMode,
+                        onSelected: (DraggingMode mode) {
+                          setState(() {
+                            _draggingMode = mode;
+                          });
+                        },
+                        itemBuilder: (BuildContext context) =>
+                            <PopupMenuItem<DraggingMode>>[
+                          const PopupMenuItem<DraggingMode>(
+                              value: DraggingMode.iOS,
+                              child: Text('iOS-like dragging')),
+                          const PopupMenuItem<DraggingMode>(
+                              value: DraggingMode.Android,
+                              child: Text('Android-like dragging')),
+                        ],
+                      ),
+                    ],
+                    pinned: true,
+                    expandedHeight: 150.0,
+                    flexibleSpace: const FlexibleSpaceBar(
+                      title: const Text('Demo'),
+                    ),
+                  ),
+                  SliverPadding(
+                      padding: EdgeInsets.only(
+                          bottom: MediaQuery.of(context).padding.bottom),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (BuildContext context, int index) {
+                            return GestureDetector(
+                              child: Item(
+                                data: _items[index],
+                                // First and last attributes affect border drawn during dragging
+                                isFirst: index == 0,
+                                isLast: index == _items.length - 1,
+                                draggingMode: _draggingMode,
+                              ),
+                              onTap: () {
+                                print("Loading your list at " +
+                                    _items[index].title);
+                                Navigator.of(context).push(
+                                    _createViewListRoute(_items[index].title));
+                              },
+                            );
+                          },
+                          childCount: _items.length,
+                        ),
+                      )),
+                ],
+              ),
+            );
+          }),
     );
   }
 }
 
-///
-/// Generates a positive random integer uniformly distributed on the range
-/// from [min], inclusive, to [max], exclusive.
-///
-int next(int min, int max) => min + _random.nextInt(max - min);
+Route _createViewListRoute(String listName) {
+  return PageRouteBuilder(
+    transitionDuration: Duration(milliseconds: 800),
+    pageBuilder: (context, animation, secondaryAnimation) =>
+        HomeView(newImage: "", title: "", listName: listName),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      var begin = Offset(0.0, 1.0);
+      var end = Offset.zero;
+      var curve = Curves.ease;
 
-///
-/// The child of the draggable widget.
-///
-class DragItem extends StatelessWidget {
-  DragItem(this.imageSource);
+      var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
 
-  String imageSource;
+      return SlideTransition(
+        position: animation.drive(tween),
+        child: child,
+      );
+    },
+  );
+}
+
+Route _createNewListRoute() {
+  return PageRouteBuilder(
+    transitionDuration: Duration(milliseconds: 800),
+    pageBuilder: (context, animation, secondaryAnimation) =>
+        NameList(listName: "New List"),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      var begin = Offset(0.0, 1.0);
+      var end = Offset.zero;
+      var curve = Curves.ease;
+
+      var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+
+      return SlideTransition(
+        position: animation.drive(tween),
+        child: child,
+      );
+    },
+  );
+}
+
+class Item extends StatelessWidget {
+  Item({
+    this.data,
+    this.isFirst,
+    this.isLast,
+    this.draggingMode,
+  });
+
+  final ItemData data;
+  final bool isFirst;
+  final bool isLast;
+  final DraggingMode draggingMode;
+
+  Widget _buildChild(BuildContext context, ReorderableItemState state) {
+    BoxDecoration decoration;
+
+    if (state == ReorderableItemState.dragProxy ||
+        state == ReorderableItemState.dragProxyFinished) {
+      // slightly transparent background white dragging (just like on iOS)
+      decoration = BoxDecoration(color: Color(0xD0FFFFFF));
+    } else {
+      bool placeholder = state == ReorderableItemState.placeholder;
+      decoration = BoxDecoration(
+          border: Border(
+              top: isFirst && !placeholder
+                  ? Divider.createBorderSide(context) //
+                  : BorderSide.none,
+              bottom: isLast && placeholder
+                  ? BorderSide.none //
+                  : Divider.createBorderSide(context)),
+          color: placeholder ? null : Colors.white);
+    }
+
+    // For iOS dragging mode, there will be drag handle on the right that triggers
+    // reordering; For android mode it will be just an empty container
+    Widget dragHandle = draggingMode == DraggingMode.iOS
+        ? ReorderableListener(
+            child: Container(
+              padding: EdgeInsets.only(right: 18.0, left: 18.0),
+              color: Color(0x08000000),
+              child: Center(
+                child: Icon(Icons.reorder, color: Color(0xFF888888)),
+              ),
+            ),
+          )
+        : Container();
+
+    Widget content = Container(
+      decoration: decoration,
+      child: SafeArea(
+          top: false,
+          bottom: false,
+          child: Opacity(
+            // hide content for placeholder
+            opacity: state == ReorderableItemState.placeholder ? 0.0 : 1.0,
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Expanded(
+                      child: Padding(
+                    padding:
+                        EdgeInsets.symmetric(vertical: 14.0, horizontal: 14.0),
+                    child: Text(data.title,
+                        style: Theme.of(context).textTheme.subtitle1),
+                  )),
+                  // Triggers the reordering
+                  dragHandle,
+                ],
+              ),
+            ),
+          )),
+    );
+
+    // For android dragging mode, wrap the entire content in DelayedReorderableListener
+    if (draggingMode == DraggingMode.Android) {
+      content = DelayedReorderableListener(
+        child: content,
+      );
+    }
+
+    return content;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Image.asset(
-      imageSource,
-      width: 50.0,
-    );
+    return ReorderableItem(
+        key: data.key, //
+        childBuilder: _buildChild);
   }
 }

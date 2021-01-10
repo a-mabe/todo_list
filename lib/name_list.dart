@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:todo_list/main.dart';
+import 'dart:convert';
+
+import 'package:todo_list/view_list.dart';
+import 'package:todo_list/data/database_helper.dart';
+import 'package:todo_list/data/todo_list.dart';
+import 'package:todo_list/data/todo_item.dart';
 
 void main() => runApp(MyApp());
 
@@ -32,37 +37,44 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class HomePage extends StatefulWidget {
-  final String image;
-  String name;
+class NameList extends StatefulWidget {
+  String listName;
 
-  HomePage({Key key, @required this.image, @required this.name})
-      : super(key: key);
+  NameList({Key key, @required this.listName}) : super(key: key);
 
   @override
-  _HomePageState createState() => _HomePageState(image: image, name: name);
+  _NameListState createState() => _NameListState(listName: listName);
 }
 
-class _HomePageState extends State<HomePage> {
-  final String image;
-  String name;
-
-  _HomePageState({@required this.image, @required this.name});
-
+class _NameListState extends State<NameList> {
   var _formKey = GlobalKey<FormState>();
   var isLoading = false;
+  String listName;
 
-  void _submit() {
+  _NameListState({@required this.listName});
+
+  void _submit() async {
     final isValid = _formKey.currentState.validate();
     if (!isValid) {
       return;
     }
     _formKey.currentState.save();
 
-    print(image);
-    print(name);
+    print(listName);
 
-    Navigator.of(context).push(_createRoute(image, name));
+    List<TodoItem> items = List();
+    List<TodoItem> completed = List();
+
+    String encodedTodo = TodoItem.encode(items);
+    String encodedDone = TodoItem.encode(completed);
+
+    await DatabaseHelper.instance.insertTodo(TodoList(
+        listName: listName,
+        items: encodedTodo,
+        completed: encodedDone,
+        count: 0));
+
+    Navigator.of(context).push(_createRoute(listName));
   }
 
   TextEditingController _controller;
@@ -70,7 +82,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _controller = new TextEditingController(text: name);
+    _controller = new TextEditingController(text: "New List");
   }
 
   @override
@@ -80,7 +92,7 @@ class _HomePageState extends State<HomePage> {
       appBar: new AppBar(
           backgroundColor: Colors.white,
           title: new Text(
-            "Edit List Item",
+            "New To-do List",
             style: new TextStyle(
                 color: Colors.grey, fontWeight: FontWeight.normal),
           )),
@@ -94,10 +106,6 @@ class _HomePageState extends State<HomePage> {
             padding: new EdgeInsets.fromLTRB(20.0, 40, 20.0, 25.0),
             child: Column(
               children: <Widget>[
-                Image.asset(
-                  image,
-                  width: 100.0,
-                ),
                 Container(
                   padding: const EdgeInsets.only(
                     left: 0,
@@ -141,10 +149,12 @@ class _HomePageState extends State<HomePage> {
                   ),
                   controller: _controller,
                   keyboardType: TextInputType.text,
-                  onFieldSubmitted: (value) {
-                    name = value;
-                    print("Title:");
+                  onChanged: (value) {
+                    listName = value;
                     print(value);
+                  },
+                  onFieldSubmitted: (value) {
+                    listName = value;
                   },
                   validator: (value) {
                     if (value.isEmpty || value.length > 25) {
@@ -256,11 +266,11 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-Route _createRoute(String image, String title) {
+Route _createRoute(String listName) {
   return PageRouteBuilder(
     transitionDuration: Duration(milliseconds: 800),
     pageBuilder: (context, animation, secondaryAnimation) =>
-        HomeView(newImage: image, title: title),
+        HomeView(newImage: "", title: "", listName: listName),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       var begin = Offset(0.0, 1.0);
       var end = Offset.zero;

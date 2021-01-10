@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:todo_list/data/images.dart';
 import 'package:todo_list/data/icon_names.dart';
 
-import 'package:todo_list/itemDetails.dart';
+import 'package:todo_list/item_details.dart';
 
 class Item {
   String id;
@@ -17,14 +17,18 @@ final TextEditingController _searchQuery = TextEditingController();
 
 /// True if the user is currently using the search bar.
 bool isSearching;
+String todoListName;
 
 class SearchList extends StatefulWidget {
-  SearchList({Key key}) : super(key: key);
+  String listName;
+  SearchList({Key key, @required this.listName}) : super(key: key);
   @override
-  _SearchListState createState() => _SearchListState();
+  _SearchListState createState() => _SearchListState(listName: listName);
 }
 
 class _SearchListState extends State<SearchList> {
+  String listName;
+
   Widget appBarTitle =
       // --------------------------
       // Search box.
@@ -68,7 +72,11 @@ class _SearchListState extends State<SearchList> {
   // --------------------------
 
   String _searchText = "";
-  _SearchListState() {
+  _SearchListState({String listName}) {
+    print("[][][][][][]");
+    print(listName);
+    print("[][][][][][]");
+    todoListName = listName;
     _searchQuery.addListener(() {
       if (_searchQuery.text.isEmpty && this.mounted) {
         setState(() {
@@ -218,8 +226,10 @@ class Uiitem extends StatelessWidget {
           Navigator.push(
               context,
               MaterialPageRoute(
-                  builder: (context) =>
-                      HomePage(image: item.image, name: item.name)));
+                  builder: (context) => HomePage(
+                      image: item.image,
+                      name: item.name,
+                      listName: todoListName)));
         },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -290,7 +300,7 @@ class MyApp extends StatelessWidget {
               TextStyle(fontSize: 14.0, fontFamily: 'Hind', color: Colors.grey),
         ),
       ),
-      home: SearchList(),
+      home: SearchList(listName: todoListName),
     );
   }
 }

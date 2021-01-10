@@ -32,6 +32,7 @@ dependencies:
   screen_loader: ^2.0.1
   sqflite: ^1.0.0
   path_provider: ^0.4.1
+  flutter_reorderable_list: ^0.1.5
 
 dev_dependencies:
   flutter_test:

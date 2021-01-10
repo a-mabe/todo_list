@@ -6,6 +6,7 @@ class TodoList {
   final int id;
   final String listName;
   final String items;
+  final String completed;
   final int count;
   static const String TABLENAME = "todos";
 
@@ -13,6 +14,7 @@ class TodoList {
     this.id,
     this.listName,
     this.items,
+    this.completed,
     this.count,
   });
 
@@ -20,6 +22,7 @@ class TodoList {
     return TodoList(
       listName: jsonData["listName"],
       items: jsonData["items"],
+      completed: jsonData["completed"],
       count: jsonData["count"],
     );
   }
@@ -28,6 +31,7 @@ class TodoList {
         "id": todoList.id,
         "listName": todoList.listName,
         "items": todoList.items,
+        "completed": todoList.completed,
         "count": todoList.count,
       };
 
