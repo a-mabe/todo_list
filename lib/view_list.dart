@@ -5,6 +5,7 @@ import 'package:screen_loader/screen_loader.dart';
 
 import 'package:todo_list/data/todo_item.dart';
 import 'package:todo_list/data/icon_names.dart';
+import 'package:todo_list/main.dart';
 import 'package:todo_list/addItem.dart';
 import 'package:todo_list/data/database_helper.dart';
 
@@ -51,36 +52,19 @@ Map<int, int> doneMap = HashMap();
 /// Random number generator to randomly select an image from the list.
 final _random = new Random();
 
+int todoListID;
+String todoListName = "";
+
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Draggable',
-        home: HomeView(newImage: "", title: "", listName: ""),
-        theme: ThemeData(
-          // Define the default brightness and colors.
-          brightness: Brightness.light,
-          primaryColor: Color(0xffff8066),
-          accentColor: Color(0xff00c29a),
-          primaryColorLight: Color(0xffff8066).withOpacity(0.4),
-          backgroundColor: Color(0xff00c29a).withOpacity(0.4),
-
-          // Define the default font family.
-          fontFamily: 'Arial',
-
-          // Define the default TextTheme. Use this to specify the default
-          // text styling for headlines, titles, bodies of text, and more.
-          primaryTextTheme: TextTheme(
-            headline1: TextStyle(
-                fontSize: 50.0,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey),
-            headline6: TextStyle(fontSize: 24.0, color: Colors.grey),
-            bodyText2: TextStyle(
-                fontSize: 14.0, fontFamily: 'Hind', color: Colors.grey),
-          ),
-        ));
+    return Scaffold(
+      body: HomeView(
+        newImage: "",
+        title: "",
+        listName: "",
+      ),
+    );
   }
 }
 
@@ -145,6 +129,36 @@ Route _createRoute() {
   );
 }
 
+Route _createHomeRoute() {
+  return PageRouteBuilder(
+    transitionDuration: Duration(milliseconds: 800),
+    pageBuilder: (context, animation, secondaryAnimation) => MyHomePage(),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      var begin = Offset(0.0, 1.0);
+      var end = Offset.zero;
+      var curve = Curves.ease;
+
+      var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+
+      return SlideTransition(
+        position: animation.drive(tween),
+        child: child,
+      );
+    },
+  );
+}
+
+void handleClick(String value) {
+  switch (value) {
+    case 'Logout':
+      print("Logout");
+      break;
+    case 'Settings':
+      print("Setting");
+      break;
+  }
+}
+
 /// -------------------------------------------------------
 ///
 /// The main screen to display a todo list with a todo side
@@ -180,6 +194,36 @@ class _HomeViewState extends State<HomeView> {
               Navigator.of(context).push(_createRoute());
             });
           },
+        ),
+        appBar: new AppBar(
+          backgroundColor: Colors.white,
+          title: new Text(
+            listName,
+            style: new TextStyle(
+                color: Colors.grey, fontWeight: FontWeight.normal),
+          ),
+          leading: GestureDetector(
+            onTap: () {
+              print("Home!");
+              Navigator.of(context).push(_createHomeRoute());
+            },
+            child: Icon(
+              Icons.home, // add custom icons also
+            ),
+          ),
+          actions: <Widget>[
+            PopupMenuButton<String>(
+              onSelected: handleClick,
+              itemBuilder: (BuildContext context) {
+                return {'Logout', 'Settings'}.map((String choice) {
+                  return PopupMenuItem<String>(
+                    value: choice,
+                    child: Text(choice),
+                  );
+                }).toList();
+              },
+            ),
+          ],
         ),
         body:
             // --------------------------
@@ -294,9 +338,6 @@ class _HomeViewState extends State<HomeView> {
                 )));
   }
 }
-
-int todoListID;
-String todoListName;
 
 void loadLists(String newImage, String title, String listName) async {
   //String encodedData = TodoItem.encode(todoItems);

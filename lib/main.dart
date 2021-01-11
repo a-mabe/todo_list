@@ -248,6 +248,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 // cacheExtent: 3000,
                 slivers: <Widget>[
                   SliverAppBar(
+                    leading: Container(),
                     actions: <Widget>[
                       PopupMenuButton<DraggingMode>(
                         child: Container(

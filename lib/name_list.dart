@@ -5,6 +5,7 @@ import 'package:todo_list/view_list.dart';
 import 'package:todo_list/data/database_helper.dart';
 import 'package:todo_list/data/todo_list.dart';
 import 'package:todo_list/data/todo_item.dart';
+import 'package:flutter_material_color_picker/flutter_material_color_picker.dart';
 
 void main() => runApp(MyApp());
 
@@ -207,6 +208,15 @@ class _NameListState extends State<NameList> {
                 ),
                 SizedBox(
                   height: MediaQuery.of(context).size.width * 0.1,
+                ),
+                Container(
+                  height: 250,
+                  child: MaterialColorPicker(
+                      allowShades: false,
+                      onColorChange: (Color color) {
+                        // Handle color changes
+                      },
+                      selectedColor: Colors.red),
                 ),
                 Row(
                   children: [
