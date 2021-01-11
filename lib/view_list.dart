@@ -436,7 +436,8 @@ void addTodoList(
       listName: todoListName,
       items: encodedTodo,
       completed: encodedDone,
-      count: todoItems.length + doneItems.length);
+      count: todoItems.length + doneItems.length,
+      color: 0xffffffff);
 
   await DatabaseHelper.instance.updateTodo(list);
 }
@@ -455,7 +456,8 @@ void saveListStates() async {
       listName: todoListName,
       items: encodedTodo,
       completed: encodedDone,
-      count: todoItems.length + doneItems.length);
+      count: todoItems.length + doneItems.length,
+      color: 0xffffffff);
 
   await DatabaseHelper.instance.updateTodo(list);
 

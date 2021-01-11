@@ -54,6 +54,60 @@ class _NameListState extends State<NameList> {
 
   _NameListState({@required this.listName});
 
+  // Use temp variable to only update color when press dialog 'submit' button
+  ColorSwatch _tempMainColor;
+  Color _tempShadeColor;
+  ColorSwatch _mainColor = Colors.blue;
+  Color dotColor = Colors.blue;
+  Color shadowColor = Colors.grey[400];
+
+  void _openMainColorPicker() async {
+    _openDialog(
+      "Main Color picker",
+      MaterialColorPicker(
+        selectedColor: _mainColor,
+        allowShades: false,
+        onMainColorChange: (color) => setState(() => _tempMainColor = color),
+      ),
+    );
+  }
+
+  void _openDialog(String title, Widget content) {
+    showDialog(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          contentPadding: const EdgeInsets.all(6.0),
+          title: Text(title),
+          content: content,
+          actions: [
+            FlatButton(
+              child: Text('CANCEL'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                setState(() {
+                  dotColor = _mainColor;
+                  shadowColor = Colors.grey[400];
+                });
+              },
+            ),
+            FlatButton(
+              child: Text('SUBMIT'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                setState(() {
+                  _mainColor = _tempMainColor;
+                  dotColor = _mainColor;
+                  shadowColor = Colors.grey[400];
+                });
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _submit() async {
     final isValid = _formKey.currentState.validate();
     if (!isValid) {
@@ -73,7 +127,8 @@ class _NameListState extends State<NameList> {
         listName: listName,
         items: encodedTodo,
         completed: encodedDone,
-        count: 0));
+        count: 0,
+        color: 0xffffffff));
 
     Navigator.of(context).push(_createRoute(listName));
   }
@@ -97,73 +152,174 @@ class _NameListState extends State<NameList> {
             style: new TextStyle(
                 color: Colors.grey, fontWeight: FontWeight.normal),
           )),
-      //body
+      bottomNavigationBar: SafeArea(
+        minimum: const EdgeInsets.fromLTRB(45, 0, 45, 10),
+        child: BottomAppBar(
+          color: Colors.transparent,
+          child: Container(
+            height: 65,
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 5,
+                  child: FlatButton(
+                    //shape: Border(bottom: BorderSide(color: Color(0xffff8066), width: 2)),
+                    //color: Colors.white,
+                    padding: EdgeInsets.symmetric(
+                      vertical: 15.0,
+                      horizontal: 20.0,
+                    ),
+                    child: Text(
+                      "Cancel",
+                      style: TextStyle(
+                        fontSize: 20.0,
+                        color: Color(0xffff8066),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ),
+                Expanded(child: Container(), flex: 1),
+                Expanded(
+                  flex: 5,
+                  child: FlatButton(
+                    //shape: Border(bottom: BorderSide(color: Color(0xff00c29a), width: 2)),
+                    //color: Colors.white,
+                    padding: EdgeInsets.symmetric(
+                      vertical: 15.0,
+                      horizontal: 20.0,
+                    ),
+                    child: Text(
+                      "Submit",
+                      style: TextStyle(
+                        fontSize: 20.0,
+                        color: Color(0xff00c29a),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    onPressed: () => _submit(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          elevation: 0,
+        ),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         //form
         child: Form(
           key: _formKey,
           child: Padding(
-            padding: new EdgeInsets.fromLTRB(20.0, 40, 20.0, 25.0),
+            padding: new EdgeInsets.fromLTRB(10.0, 5, 10.0, 25.0),
             child: Column(
               children: <Widget>[
                 Container(
                   padding: const EdgeInsets.only(
                     left: 0,
-                    top: 40,
+                    top: 0,
                     right: 0,
                     bottom: 0,
                   ),
                 ),
-                TextFormField(
-                  style: TextStyle(fontSize: 22.0, color: Colors.black87),
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Color(0xfff0f0f0),
-                    labelStyle: TextStyle(
-                      color: Color(0xff00c29a),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(20)),
-                      borderSide:
-                          BorderSide(width: 1, color: Color(0xff00c29a)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(20)),
-                      borderSide: BorderSide(width: 1, color: Colors.grey),
-                    ),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(20)),
-                        borderSide: BorderSide(
-                          width: 1,
-                        )),
-                    errorBorder: OutlineInputBorder(
+                Row(children: <Widget>[
+                  Expanded(
+                    flex: 19,
+                    child: TextFormField(
+                      style: TextStyle(fontSize: 24.0, color: Colors.black87),
+                      decoration: InputDecoration(
+                        //filled: true,
+                        //fillColor: Color(0xfff0f0f0),
+                        labelStyle: TextStyle(
+                          color: Color(0x7700c29a),
+                        ),
+                        border: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        errorBorder: InputBorder.none,
+                        disabledBorder: InputBorder.none,
+                        /*focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(20)),
                         borderSide:
-                            BorderSide(width: 1, color: Color(0xffff8066))),
-                    focusedErrorBorder: OutlineInputBorder(
+                            BorderSide(width: 1, color: Color(0xff00c29a)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(20)),
-                        borderSide:
-                            BorderSide(width: 1, color: Color(0xffff8066))),
-                    contentPadding: EdgeInsets.fromLTRB(30, 20, 30, 15),
-                    labelText: "Title",
+                        borderSide: BorderSide(width: 1, color: Colors.grey),
+                      ),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(20)),
+                          borderSide: BorderSide(
+                            width: 1,
+                          )),
+                      errorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(20)),
+                          borderSide:
+                              BorderSide(width: 1, color: Color(0xffff8066))),
+                      focusedErrorBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(20)),
+                          borderSide:
+                              BorderSide(width: 1, color: Color(0xffff8066))),
+                      */
+                        contentPadding: EdgeInsets.fromLTRB(0, 20, 0, 20),
+                        labelText: "Title",
+                      ),
+                      controller: _controller,
+                      keyboardType: TextInputType.text,
+                      onChanged: (value) {
+                        listName = value;
+                        print(value);
+                      },
+                      onFieldSubmitted: (value) {
+                        listName = value;
+                      },
+                      validator: (value) {
+                        if (value.isEmpty || value.length > 25) {
+                          return "Task name must be 0 - 25 characters.";
+                        }
+                        return null;
+                      },
+                    ),
                   ),
-                  controller: _controller,
-                  keyboardType: TextInputType.text,
-                  onChanged: (value) {
-                    listName = value;
-                    print(value);
-                  },
-                  onFieldSubmitted: (value) {
-                    listName = value;
-                  },
-                  validator: (value) {
-                    if (value.isEmpty || value.length > 25) {
-                      return "Task name must be 0 - 25 characters.";
-                    }
-                    return null;
-                  },
-                ),
+                  Expanded(
+                    flex: 2,
+                    child: GestureDetector(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                                blurRadius: 5,
+                                color: shadowColor,
+                                spreadRadius: 1)
+                          ],
+                        ),
+                        child: CircleAvatar(
+                          backgroundColor: dotColor,
+                          radius: 15.0,
+                        ),
+                      ),
+                      onTapDown: (p) {
+                        setState(() {
+                          dotColor = _mainColor.withOpacity(.5);
+                          shadowColor = _mainColor;
+                        });
+                      },
+                      /*onTapUp: (p) {
+                        setState(() {
+                          dotColor = _mainColor;
+                          shadowColor = Colors.grey[400];
+                        });
+                      },*/
+                      onTap: () {
+                        _openMainColorPicker();
+                      },
+                    ),
+                  ),
+                ]),
                 //box styling
                 SizedBox(
                   height: MediaQuery.of(context).size.width * 0.1,
@@ -209,7 +365,7 @@ class _NameListState extends State<NameList> {
                 SizedBox(
                   height: MediaQuery.of(context).size.width * 0.1,
                 ),
-                Container(
+                /*Container(
                   height: 250,
                   child: MaterialColorPicker(
                       allowShades: false,
@@ -217,56 +373,61 @@ class _NameListState extends State<NameList> {
                         // Handle color changes
                       },
                       selectedColor: Colors.red),
-                ),
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 5,
-                      child: FlatButton(
-                        shape: Border(
-                            bottom:
-                                BorderSide(color: Color(0xffff8066), width: 2)),
-                        //color: Colors.white,
-                        padding: EdgeInsets.symmetric(
-                          vertical: 15.0,
-                          horizontal: 20.0,
-                        ),
-                        child: Text(
-                          "Cancel",
-                          style: TextStyle(
-                            fontSize: 24.0,
-                            color: Color(0xffff8066),
-                            fontWeight: FontWeight.normal,
+                ),*/
+                /*Expanded(
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          flex: 5,
+                          child: FlatButton(
+                            shape: Border(
+                                bottom: BorderSide(
+                                    color: Color(0xffff8066), width: 2)),
+                            //color: Colors.white,
+                            padding: EdgeInsets.symmetric(
+                              vertical: 15.0,
+                              horizontal: 20.0,
+                            ),
+                            child: Text(
+                              "Cancel",
+                              style: TextStyle(
+                                fontSize: 24.0,
+                                color: Color(0xffff8066),
+                                fontWeight: FontWeight.normal,
+                              ),
+                            ),
+                            onPressed: () => Navigator.of(context).pop(),
                           ),
                         ),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                    ),
-                    Expanded(child: Container(), flex: 1),
-                    Expanded(
-                      flex: 5,
-                      child: FlatButton(
-                        shape: Border(
-                            bottom:
-                                BorderSide(color: Color(0xff00c29a), width: 2)),
-                        //color: Colors.white,
-                        padding: EdgeInsets.symmetric(
-                          vertical: 15.0,
-                          horizontal: 20.0,
-                        ),
-                        child: Text(
-                          "Submit",
-                          style: TextStyle(
-                            fontSize: 24.0,
-                            color: Color(0xff00c29a),
-                            fontWeight: FontWeight.normal,
+                        Expanded(child: Container(), flex: 1),
+                        Expanded(
+                          flex: 5,
+                          child: FlatButton(
+                            shape: Border(
+                                bottom: BorderSide(
+                                    color: Color(0xff00c29a), width: 2)),
+                            //color: Colors.white,
+                            padding: EdgeInsets.symmetric(
+                              vertical: 15.0,
+                              horizontal: 20.0,
+                            ),
+                            child: Text(
+                              "Submit",
+                              style: TextStyle(
+                                fontSize: 24.0,
+                                color: Color(0xff00c29a),
+                                fontWeight: FontWeight.normal,
+                              ),
+                            ),
+                            onPressed: () => _submit(),
                           ),
                         ),
-                        onPressed: () => _submit(),
-                      ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ),*/
               ],
             ),
           ),

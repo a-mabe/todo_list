@@ -25,7 +25,7 @@ class DatabaseHelper {
     return await openDatabase(join(await getDatabasesPath(), databaseName),
         version: 1, onCreate: (Database db, int version) async {
       await db.execute(
-          "CREATE TABLE todos(id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, listName TEXT, items TEXT, completed TEXT, count INTEGER)");
+          "CREATE TABLE todos(id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, listName TEXT, items TEXT, completed TEXT, count INTEGER, color INTEGER)");
     });
   }
 
@@ -40,6 +40,7 @@ class DatabaseHelper {
         items: maps[i]["items"],
         completed: maps[i]["completed"],
         count: maps[i]["count"],
+        color: maps[i]["color"],
       );
     });
   }

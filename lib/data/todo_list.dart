@@ -8,6 +8,7 @@ class TodoList {
   final String items;
   final String completed;
   final int count;
+  final int color;
   static const String TABLENAME = "todos";
 
   TodoList({
@@ -16,6 +17,7 @@ class TodoList {
     this.items,
     this.completed,
     this.count,
+    this.color,
   });
 
   factory TodoList.fromJson(Map<String, dynamic> jsonData) {
@@ -24,6 +26,7 @@ class TodoList {
       items: jsonData["items"],
       completed: jsonData["completed"],
       count: jsonData["count"],
+      color: jsonData["color"],
     );
   }
 
@@ -33,6 +36,7 @@ class TodoList {
         "items": todoList.items,
         "completed": todoList.completed,
         "count": todoList.count,
+        "color": todoList.color,
       };
 
   static String encode(List<TodoList> todoList) => json.encode(

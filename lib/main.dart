@@ -8,8 +8,8 @@ import 'package:todo_list/view_list.dart';
 import 'package:todo_list/name_list.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized(); //all widgets are rendered here
-  await loadLists();
+  //WidgetsFlutterBinding.ensureInitialized(); //all widgets are rendered here
+  //await loadLists();
   runApp(MyApp());
 }
 
@@ -55,9 +55,10 @@ class MyHomePage extends StatefulWidget {
 }
 
 class ItemData {
-  ItemData(this.title, this.key);
+  ItemData(this.title, this.color, this.key);
 
   final String title;
+  final int color;
 
   // Each item in reorderable list needs stable and unique key
   final Key key;
@@ -83,7 +84,7 @@ void loadLists() async {
   // For each list that existed in the database
   for (int i = 0; i < todos.length; i++) {
     print(todos[i].listName);
-    _items.add(ItemData(todos[i].listName, ValueKey(i)));
+    _items.add(ItemData(todos[i].listName, todos[i].color, ValueKey(i)));
 
     /*
     /// Add an item to the list of todo item widgets.
@@ -177,22 +178,11 @@ void loadLists() async {
 List<ItemData> _items = List();
 
 class _MyHomePageState extends State<MyHomePage> {
-  _MyHomePageState() {
-    // Get lists from database
-
-    /*setState(() {
-      loadLists();
-    });*/
-
-    /*
-    for (int i = 0; i < 20; ++i) {
-      String label = "List item $i";
-      if (i == 5) {
-        label += ". This item has a long label and will be wrapped.";
-      }
-      _items.add(ItemData(label, ValueKey(i)));
-    }
-    */
+  @override
+  void initState() {
+    super.initState();
+    print("init");
+    loadLists();
   }
 
   // Returns index of item with given key
@@ -274,9 +264,9 @@ class _MyHomePageState extends State<MyHomePage> {
                       ),
                     ],
                     pinned: true,
-                    expandedHeight: 150.0,
+                    expandedHeight: 100.0,
                     flexibleSpace: const FlexibleSpaceBar(
-                      title: const Text('Demo'),
+                      title: const Text("To-do, Ta-da"),
                     ),
                   ),
                   SliverPadding(
@@ -370,18 +360,15 @@ class Item extends StatelessWidget {
 
     if (state == ReorderableItemState.dragProxy ||
         state == ReorderableItemState.dragProxyFinished) {
-      // slightly transparent background white dragging (just like on iOS)
+      // slightly transparent background while dragging (just like on iOS)
       decoration = BoxDecoration(color: Color(0xD0FFFFFF));
     } else {
       bool placeholder = state == ReorderableItemState.placeholder;
       decoration = BoxDecoration(
           border: Border(
-              top: isFirst && !placeholder
-                  ? Divider.createBorderSide(context) //
-                  : BorderSide.none,
-              bottom: isLast && placeholder
-                  ? BorderSide.none //
-                  : Divider.createBorderSide(context)),
+            left: Divider.createBorderSide(context,
+                color: Color(data.color), width: 30),
+          ),
           color: placeholder ? null : Colors.white);
     }
 
@@ -391,9 +378,9 @@ class Item extends StatelessWidget {
         ? ReorderableListener(
             child: Container(
               padding: EdgeInsets.only(right: 18.0, left: 18.0),
-              color: Color(0x08000000),
+              color: Color(0xffffffff),
               child: Center(
-                child: Icon(Icons.reorder, color: Color(0xFF888888)),
+                child: Icon(Icons.reorder, color: Color(0xffd1d1d1)),
               ),
             ),
           )
