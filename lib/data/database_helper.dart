@@ -46,9 +46,11 @@ class DatabaseHelper {
 
   insertTodo(TodoList todoList) async {
     final db = await database;
-    var res = await db.insert(TodoList.TABLENAME, TodoList.toMap(todoList),
-        conflictAlgorithm: ConflictAlgorithm.replace);
-    return res;
+    await db.transaction((txn) async {
+      return await txn.insert(TodoList.TABLENAME, TodoList.toMap(todoList),
+          conflictAlgorithm: ConflictAlgorithm.replace);
+    });
+    //return res;
   }
 
   updateTodo(TodoList todoList) async {
