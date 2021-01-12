@@ -18,16 +18,21 @@ final TextEditingController _searchQuery = TextEditingController();
 /// True if the user is currently using the search bar.
 bool isSearching;
 String todoListName;
+int todoListOrder;
 
 class SearchList extends StatefulWidget {
   String listName;
-  SearchList({Key key, @required this.listName}) : super(key: key);
+  int order;
+  SearchList({Key key, @required this.listName, @required this.order})
+      : super(key: key);
   @override
-  _SearchListState createState() => _SearchListState(listName: listName);
+  _SearchListState createState() =>
+      _SearchListState(listName: listName, order: order);
 }
 
 class _SearchListState extends State<SearchList> {
   String listName;
+  int order;
 
   Widget appBarTitle =
       // --------------------------
@@ -72,11 +77,12 @@ class _SearchListState extends State<SearchList> {
   // --------------------------
 
   String _searchText = "";
-  _SearchListState({String listName}) {
+  _SearchListState({String listName, int order}) {
     print("[][][][][][]");
     print(listName);
     print("[][][][][][]");
     todoListName = listName;
+    todoListOrder = order;
     _searchQuery.addListener(() {
       if (_searchQuery.text.isEmpty && this.mounted) {
         setState(() {
@@ -229,7 +235,8 @@ class Uiitem extends StatelessWidget {
                   builder: (context) => HomePage(
                       image: item.image,
                       name: item.name,
-                      listName: todoListName)));
+                      listName: todoListName,
+                      order: todoListOrder)));
         },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -300,7 +307,6 @@ class MyApp extends StatelessWidget {
               TextStyle(fontSize: 14.0, fontFamily: 'Hind', color: Colors.grey),
         ),
       ),
-      home: SearchList(listName: todoListName),
     );
   }
 }

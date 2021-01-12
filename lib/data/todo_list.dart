@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-import 'package:todo_list/data/todo_item.dart';
-
 class TodoList {
   final int id;
   final String listName;
@@ -9,6 +7,7 @@ class TodoList {
   final String completed;
   final int count;
   final int color;
+  int ordering;
   static const String TABLENAME = "todos";
 
   TodoList({
@@ -18,7 +17,12 @@ class TodoList {
     this.completed,
     this.count,
     this.color,
+    this.ordering,
   });
+
+  void setOrder(int newOrdering) {
+    ordering = newOrdering;
+  }
 
   factory TodoList.fromJson(Map<String, dynamic> jsonData) {
     return TodoList(
@@ -27,6 +31,7 @@ class TodoList {
       completed: jsonData["completed"],
       count: jsonData["count"],
       color: jsonData["color"],
+      ordering: jsonData["ordering"],
     );
   }
 
@@ -37,6 +42,7 @@ class TodoList {
         "completed": todoList.completed,
         "count": todoList.count,
         "color": todoList.color,
+        "ordering": todoList.ordering
       };
 
   static String encode(List<TodoList> todoList) => json.encode(

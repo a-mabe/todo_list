@@ -40,23 +40,26 @@ class MyApp extends StatelessWidget {
 
 class NameList extends StatefulWidget {
   String listName;
+  int order;
 
-  NameList({Key key, @required this.listName}) : super(key: key);
+  NameList({Key key, @required this.listName, @required this.order})
+      : super(key: key);
 
   @override
-  _NameListState createState() => _NameListState(listName: listName);
+  _NameListState createState() =>
+      _NameListState(listName: listName, order: order);
 }
 
 class _NameListState extends State<NameList> {
   var _formKey = GlobalKey<FormState>();
   var isLoading = false;
   String listName;
+  int order;
 
-  _NameListState({@required this.listName});
+  _NameListState({@required this.listName, @required this.order});
 
   // Use temp variable to only update color when press dialog 'submit' button
   ColorSwatch _tempMainColor;
-  Color _tempShadeColor;
   ColorSwatch _mainColor = Colors.blue;
   Color dotColor = Colors.blue;
   Color shadowColor = Colors.grey[400];
@@ -128,9 +131,10 @@ class _NameListState extends State<NameList> {
         items: encodedTodo,
         completed: encodedDone,
         count: 0,
-        color: 0xffffffff));
+        color: _mainColor.value,
+        ordering: order));
 
-    Navigator.of(context).push(_createRoute(listName));
+    Navigator.of(context).push(_createRoute(listName, order));
   }
 
   TextEditingController _controller;
@@ -437,11 +441,15 @@ class _NameListState extends State<NameList> {
   }
 }
 
-Route _createRoute(String listName) {
+Route _createRoute(String listName, int order) {
   return PageRouteBuilder(
     transitionDuration: Duration(milliseconds: 800),
-    pageBuilder: (context, animation, secondaryAnimation) =>
-        HomeView(newImage: "", title: "", listName: listName),
+    pageBuilder: (context, animation, secondaryAnimation) => HomeView(
+      newImage: "",
+      title: "",
+      listName: listName,
+      order: order,
+    ),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       var begin = Offset(0.0, 1.0);
       var end = Offset.zero;

@@ -25,7 +25,7 @@ class DatabaseHelper {
     return await openDatabase(join(await getDatabasesPath(), databaseName),
         version: 1, onCreate: (Database db, int version) async {
       await db.execute(
-          "CREATE TABLE todos(id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, listName TEXT, items TEXT, completed TEXT, count INTEGER, color INTEGER)");
+          "CREATE TABLE todos(id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, listName TEXT, items TEXT, completed TEXT, count INTEGER, color INTEGER, ordering INTEGER)");
     });
   }
 
@@ -35,12 +35,13 @@ class DatabaseHelper {
 
     return List.generate(maps.length, (i) {
       return TodoList(
-        id: maps[i]['id'],
+        id: maps[i]["id"],
         listName: maps[i]["listName"],
         items: maps[i]["items"],
         completed: maps[i]["completed"],
         count: maps[i]["count"],
         color: maps[i]["color"],
+        ordering: maps[i]["ordering"],
       );
     });
   }

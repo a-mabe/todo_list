@@ -55,10 +55,11 @@ class MyHomePage extends StatefulWidget {
 }
 
 class ItemData {
-  ItemData(this.title, this.color, this.key);
+  ItemData(this.title, this.color, this.order, this.key);
 
   final String title;
   final int color;
+  int order;
 
   // Each item in reorderable list needs stable and unique key
   final Key key;
@@ -70,6 +71,7 @@ enum DraggingMode {
 }
 
 final numItems = new ValueNotifier<int>(0);
+List<TodoList> todos = List();
 
 void loadLists() async {
   //String encodedData = TodoItem.encode(todoItems);
@@ -79,12 +81,13 @@ void loadLists() async {
 
   _items = List();
 
-  List<TodoList> todos = await DatabaseHelper.instance.retrieveTodos();
+  todos = await DatabaseHelper.instance.retrieveTodos();
 
   // For each list that existed in the database
   for (int i = 0; i < todos.length; i++) {
     print(todos[i].listName);
-    _items.add(ItemData(todos[i].listName, todos[i].color, ValueKey(i)));
+    _items.add(ItemData(
+        todos[i].listName, todos[i].color, todos[i].ordering, ValueKey(i)));
 
     /*
     /// Add an item to the list of todo item widgets.
@@ -99,6 +102,9 @@ void loadLists() async {
     todo.value++;
     */
   }
+
+  _items.sort((a, b) => a.order.compareTo(b.order));
+  todos.sort((a, b) => a.ordering.compareTo(b.ordering));
 
   // Obtain shared preferences
   //final prefs = await SharedPreferences.getInstance();
@@ -175,6 +181,12 @@ void loadLists() async {
   print(_items);
 }
 
+void saveList() async {
+  for (int i = 0; i < todos.length; i++) {
+    await DatabaseHelper.instance.updateTodo(todos[i]);
+  }
+}
+
 List<ItemData> _items = List();
 
 class _MyHomePageState extends State<MyHomePage> {
@@ -199,10 +211,14 @@ class _MyHomePageState extends State<MyHomePage> {
     //   return false;
 
     final draggedItem = _items[draggingIndex];
+    final draggedTodoItem = todos[draggingIndex];
     setState(() {
       debugPrint("Reordering $item -> $newPosition");
       _items.removeAt(draggingIndex);
       _items.insert(newPositionIndex, draggedItem);
+
+      todos.removeAt(draggingIndex);
+      todos.insert(newPositionIndex, draggedTodoItem);
     });
     return true;
   }
@@ -210,6 +226,18 @@ class _MyHomePageState extends State<MyHomePage> {
   void _reorderDone(Key item) {
     final draggedItem = _items[_indexOfKey(item)];
     debugPrint("Reordering finished for ${draggedItem.title}}");
+
+    for (int i = 0; i < _items.length; i++) {
+      _items[i].order = i;
+      todos[i].setOrder(i);
+    }
+
+    for (int i = 0; i < _items.length; i++) {
+      print(_items[i].order);
+      print(todos[i].ordering);
+    }
+    print("Saving...");
+    saveList();
   }
 
   //
@@ -285,9 +313,9 @@ class _MyHomePageState extends State<MyHomePage> {
                               ),
                               onTap: () {
                                 print("Loading your list at " +
-                                    _items[index].title);
-                                Navigator.of(context).push(
-                                    _createViewListRoute(_items[index].title));
+                                    _items[index].order.toString());
+                                Navigator.of(context).push(_createViewListRoute(
+                                    _items[index].title, _items[index].order));
                               },
                             );
                           },
@@ -302,11 +330,15 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-Route _createViewListRoute(String listName) {
+Route _createViewListRoute(String listName, int order) {
   return PageRouteBuilder(
     transitionDuration: Duration(milliseconds: 800),
-    pageBuilder: (context, animation, secondaryAnimation) =>
-        HomeView(newImage: "", title: "", listName: listName),
+    pageBuilder: (context, animation, secondaryAnimation) => HomeView(
+      newImage: "",
+      title: "",
+      listName: listName,
+      order: order,
+    ),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       var begin = Offset(0.0, 1.0);
       var end = Offset.zero;
@@ -326,7 +358,7 @@ Route _createNewListRoute() {
   return PageRouteBuilder(
     transitionDuration: Duration(milliseconds: 800),
     pageBuilder: (context, animation, secondaryAnimation) =>
-        NameList(listName: "New List"),
+        NameList(listName: "New List", order: _items.length),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       var begin = Offset(0.0, 1.0);
       var end = Offset.zero;

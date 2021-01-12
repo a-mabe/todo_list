@@ -33,30 +33,37 @@ class MyApp extends StatelessWidget {
 }
 
 String todoListName;
+int todoListOrder;
 
 // ignore: must_be_immutable
 class HomePage extends StatefulWidget {
   final String image;
   String name, listName;
+  int order;
 
   HomePage(
       {Key key,
       @required this.image,
       @required this.name,
-      @required this.listName})
+      @required this.listName,
+      @required this.order})
       : super(key: key);
 
   @override
-  _HomePageState createState() =>
-      _HomePageState(image: image, name: name, listName: listName);
+  _HomePageState createState() => _HomePageState(
+      image: image, name: name, listName: listName, order: order);
 }
 
 class _HomePageState extends State<HomePage> {
   final String image;
   String name, listName;
+  int order;
 
   _HomePageState(
-      {@required this.image, @required this.name, @required this.listName});
+      {@required this.image,
+      @required this.name,
+      @required this.listName,
+      @required this.order});
 
   var _formKey = GlobalKey<FormState>();
   var isLoading = false;
@@ -82,6 +89,7 @@ class _HomePageState extends State<HomePage> {
     _controller = new TextEditingController(text: name);
 
     todoListName = listName;
+    todoListOrder = order;
 
     print("---------");
     print(todoListName);
@@ -275,8 +283,11 @@ class _HomePageState extends State<HomePage> {
 Route _createRoute(String image, String title) {
   return PageRouteBuilder(
     transitionDuration: Duration(milliseconds: 800),
-    pageBuilder: (context, animation, secondaryAnimation) =>
-        HomeView(newImage: image, title: title, listName: todoListName),
+    pageBuilder: (context, animation, secondaryAnimation) => HomeView(
+        newImage: image,
+        title: title,
+        listName: todoListName,
+        order: todoListOrder),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       var begin = Offset(0.0, 1.0);
       var end = Offset.zero;

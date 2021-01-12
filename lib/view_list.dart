@@ -5,6 +5,7 @@ import 'package:screen_loader/screen_loader.dart';
 
 import 'package:todo_list/data/todo_item.dart';
 import 'package:todo_list/data/icon_names.dart';
+import 'package:todo_list/item_details.dart';
 import 'package:todo_list/main.dart';
 import 'package:todo_list/addItem.dart';
 import 'package:todo_list/data/database_helper.dart';
@@ -52,7 +53,7 @@ Map<int, int> doneMap = HashMap();
 /// Random number generator to randomly select an image from the list.
 final _random = new Random();
 
-int todoListID;
+int todoListID, todoListColor, todoListOrder;
 String todoListName = "";
 
 class MyApp extends StatelessWidget {
@@ -63,6 +64,7 @@ class MyApp extends StatelessWidget {
         newImage: "",
         title: "",
         listName: "",
+        order: 0,
       ),
     );
   }
@@ -70,17 +72,23 @@ class MyApp extends StatelessWidget {
 
 class HomeView extends StatefulWidget {
   final String newImage, title, listName;
+  final int order;
 
   HomeView(
       {Key key,
       @required this.newImage,
       @required this.title,
-      @required this.listName})
+      @required this.listName,
+      @required this.order})
       : super(key: key);
 
   @override
   _HomeViewState createState() => _HomeViewState(
-      key: key, newImage: newImage, title: title, listName: listName);
+      key: key,
+      newImage: newImage,
+      title: title,
+      listName: listName,
+      order: order);
 }
 
 List<String> images = [
@@ -111,9 +119,8 @@ List<String> images = [
 Route _createRoute() {
   return PageRouteBuilder(
     transitionDuration: Duration(milliseconds: 800),
-    pageBuilder: (context, animation, secondaryAnimation) => SearchList(
-      listName: todoListName,
-    ),
+    pageBuilder: (context, animation, secondaryAnimation) =>
+        SearchList(listName: todoListName, order: todoListOrder),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       var begin = Offset(0.0, 1.0);
       var end = Offset.zero;
@@ -167,12 +174,14 @@ void handleClick(String value) {
 /// -------------------------------------------------------
 class _HomeViewState extends State<HomeView> {
   String newImage, title, listName;
+  int order;
 
   _HomeViewState(
       {Key key,
       @required this.newImage,
       @required this.title,
-      @required this.listName});
+      @required this.listName,
+      @required this.order});
 
   @override
   void initState() {
@@ -181,7 +190,8 @@ class _HomeViewState extends State<HomeView> {
     print(newImage);
     print(title);
     print(listName);
-    loadLists(newImage, title, listName);
+    print(order);
+    loadLists(newImage, title, listName, order);
   }
 
   @override
@@ -339,7 +349,8 @@ class _HomeViewState extends State<HomeView> {
   }
 }
 
-void loadLists(String newImage, String title, String listName) async {
+void loadLists(
+    String newImage, String title, String listName, int order) async {
   //String encodedData = TodoItem.encode(todoItems);
 
   //await DatabaseHelper.instance.insertTodo(TodoList(
@@ -349,20 +360,25 @@ void loadLists(String newImage, String title, String listName) async {
   doneList = [];
 
   List<TodoList> todos = await DatabaseHelper.instance.retrieveTodos();
-
-  print(todos);
+  todoListName = listName;
+  todoListOrder = order;
+  print("The todolist name is: ");
+  print(todoListName);
+  print(todoListOrder);
 
   if (todos != null) {
     for (int i = 0; i < todos.length; i++) {
-      if (todos[i].listName == listName) {
-        todoListName = listName;
+      if (todos[i].ordering == todoListOrder) {
         List<TodoItem> decodedTodo = TodoItem.decode(todos[i].items);
-        print("Got the todos");
+        print("Got the todos and the name is...");
+        print(todoListName);
         List<TodoItem> decodedDone = TodoItem.decode(todos[i].completed);
         print("Got the completed");
         todoItems = decodedTodo;
         doneItems = decodedDone;
         todoListID = todos[i].id;
+        todoListColor = todos[i].color;
+        //todoListOrder = todos[i].order;
         break;
       }
     }
@@ -437,7 +453,8 @@ void addTodoList(
       items: encodedTodo,
       completed: encodedDone,
       count: todoItems.length + doneItems.length,
-      color: 0xffffffff);
+      color: todoListColor,
+      ordering: todoListOrder);
 
   await DatabaseHelper.instance.updateTodo(list);
 }
@@ -457,7 +474,8 @@ void saveListStates() async {
       items: encodedTodo,
       completed: encodedDone,
       count: todoItems.length + doneItems.length,
-      color: 0xffffffff);
+      color: todoListColor,
+      ordering: todoListOrder);
 
   await DatabaseHelper.instance.updateTodo(list);
 
