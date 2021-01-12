@@ -24,6 +24,10 @@ class DatabaseHelper {
   initializeDatabase() async {
     return await openDatabase(join(await getDatabasesPath(), databaseName),
         version: 1, onCreate: (Database db, int version) async {
+      if (Platform.isIOS) {
+        await db.execute('PRAGMA sqflite -- db_config_defensive_off');
+      }
+
       await db.execute(
           "CREATE TABLE todos(id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, listName TEXT, items TEXT, completed TEXT, count INTEGER, color INTEGER, ordering INTEGER)");
     });
