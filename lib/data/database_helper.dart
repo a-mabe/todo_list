@@ -1,10 +1,9 @@
 import 'dart:io';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:path_provider/path_provider.dart';
 
-import 'package:todo_list/data/todo_item.dart';
 import 'package:todo_list/data/todo_list.dart';
+import 'package:todo_list/view_list.dart';
 
 class DatabaseHelper {
   //Create a private constructor
@@ -24,6 +23,7 @@ class DatabaseHelper {
   initializeDatabase() async {
     return await openDatabase(join(await getDatabasesPath(), databaseName),
         version: 1, onCreate: (Database db, int version) async {
+      // Possible fix for iOS issue (did not work)
       if (Platform.isIOS) {
         await db.execute('PRAGMA sqflite -- db_config_defensive_off');
       }
@@ -53,8 +53,19 @@ class DatabaseHelper {
   insertTodo(TodoList todoList) async {
     final db = await database;
     await db.transaction((txn) async {
-      return await txn.insert(TodoList.TABLENAME, TodoList.toMap(todoList),
-          conflictAlgorithm: ConflictAlgorithm.replace);
+      return await txn.rawInsert(
+          'INSERT INTO todos(listName, items, completed, count, color, ordering) VALUES(?, ?, ?, ?, ?, ?)',
+          [
+            todoList.listName,
+            todoList.items,
+            todoList.completed,
+            todoList.count,
+            todoList.color,
+            todoList.ordering
+          ]);
+
+      /*await txn.insert(TodoList.TABLENAME, TodoList.toMap(todoList),
+          conflictAlgorithm: ConflictAlgorithm.replace);*/
     });
     //return res;
   }
