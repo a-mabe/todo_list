@@ -3,7 +3,6 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'package:todo_list/data/todo_list.dart';
-import 'package:todo_list/view_list.dart';
 
 class DatabaseHelper {
   //Create a private constructor
@@ -53,19 +52,8 @@ class DatabaseHelper {
   insertTodo(TodoList todoList) async {
     final db = await database;
     await db.transaction((txn) async {
-      return await txn.rawInsert(
-          'INSERT INTO todos(listName, items, completed, count, color, ordering) VALUES(?, ?, ?, ?, ?, ?)',
-          [
-            todoList.listName,
-            todoList.items,
-            todoList.completed,
-            todoList.count,
-            todoList.color,
-            todoList.ordering
-          ]);
-
-      /*await txn.insert(TodoList.TABLENAME, TodoList.toMap(todoList),
-          conflictAlgorithm: ConflictAlgorithm.replace);*/
+      return await txn.insert(TodoList.TABLENAME, TodoList.toMap(todoList),
+          conflictAlgorithm: ConflictAlgorithm.replace);
     });
     //return res;
   }

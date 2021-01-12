@@ -1,11 +1,6 @@
 import 'dart:collection';
-import 'dart:convert';
-
-import 'package:screen_loader/screen_loader.dart';
 
 import 'package:todo_list/data/todo_item.dart';
-import 'package:todo_list/data/icon_names.dart';
-import 'package:todo_list/item_details.dart';
 import 'package:todo_list/main.dart';
 import 'package:todo_list/addItem.dart';
 import 'package:todo_list/data/database_helper.dart';
@@ -155,17 +150,6 @@ Route _createHomeRoute() {
   );
 }
 
-void handleClick(String value) {
-  switch (value) {
-    case 'Logout':
-      print("Logout");
-      break;
-    case 'Settings':
-      print("Setting");
-      break;
-  }
-}
-
 /// -------------------------------------------------------
 ///
 /// The main screen to display a todo list with a todo side
@@ -194,158 +178,216 @@ class _HomeViewState extends State<HomeView> {
     loadLists(newImage, title, listName, order);
   }
 
+  Future<bool> _onWillPop() async {
+    Navigator.of(context).push(_createHomeRoute());
+    return true;
+  }
+
+  showAlertDialog(BuildContext context) {
+    // set up the buttons
+    Widget cancelButton = FlatButton(
+      child: Text("Cancel"),
+      onPressed: () {
+        Navigator.of(context).pop();
+      },
+    );
+    Widget continueButton = FlatButton(
+      child: Text("Yes, delete"),
+      onPressed: () {
+        DatabaseHelper.instance.deleteTodo(todoListID);
+        Navigator.of(context).pop();
+        Navigator.of(context).push(_createHomeRoute());
+      },
+    );
+
+    // set up the AlertDialog
+    AlertDialog alert = AlertDialog(
+      title: Text("Deleting To-do List"),
+      content:
+          Text("Are you sure you want to delete \"" + todoListName + "\"?"),
+      actions: [
+        cancelButton,
+        continueButton,
+      ],
+    );
+
+    // show the dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return alert;
+      },
+    );
+  }
+
+  void handleClick(String value) async {
+    switch (value) {
+      case 'Delete To-do List':
+        print("delete");
+
+        showAlertDialog(context);
+
+        //await DatabaseHelper.instance.deleteTodo(todoListID);
+        break;
+      case 'Settings':
+        print("Setting");
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            setState(() {
-              //saveListStates();
-              Navigator.of(context).push(_createRoute());
-            });
-          },
-        ),
-        appBar: new AppBar(
-          backgroundColor: Colors.white,
-          title: new Text(
-            listName,
-            style: new TextStyle(
-                color: Colors.grey, fontWeight: FontWeight.normal),
-          ),
-          leading: GestureDetector(
-            onTap: () {
-              print("Home!");
-              Navigator.of(context).push(_createHomeRoute());
-            },
-            child: Icon(
-              Icons.home, // add custom icons also
-            ),
-          ),
-          actions: <Widget>[
-            PopupMenuButton<String>(
-              onSelected: handleClick,
-              itemBuilder: (BuildContext context) {
-                return {'Logout', 'Settings'}.map((String choice) {
-                  return PopupMenuItem<String>(
-                    value: choice,
-                    child: Text(choice),
-                  );
-                }).toList();
+    return WillPopScope(
+        onWillPop: _onWillPop,
+        child: Scaffold(
+            floatingActionButton: FloatingActionButton(
+              onPressed: () {
+                setState(() {
+                  //saveListStates();
+                  Navigator.of(context).push(_createRoute());
+                });
               },
             ),
-          ],
-        ),
-        body:
-            // --------------------------
-            // Add padding.
-            // --------------------------
-            new Container(
-                padding: const EdgeInsets.only(
-                  left: 9,
-                  top: 60,
-                  right: 9,
-                  bottom: 20,
+            appBar: new AppBar(
+              backgroundColor: Colors.white,
+              title: new Text(
+                listName,
+                style: new TextStyle(
+                    color: Colors.grey, fontWeight: FontWeight.normal),
+              ),
+              actions: <Widget>[
+                PopupMenuButton<String>(
+                  onSelected: handleClick,
+                  itemBuilder: (BuildContext context) {
+                    return {"Settings", "Delete To-do List"}
+                        .map((String choice) {
+                      return PopupMenuItem<String>(
+                        value: choice,
+                        child: (choice == "Delete To-do List")
+                            ? Text(choice,
+                                style: TextStyle(
+                                  color: Colors.red,
+                                ))
+                            : Text(choice),
+                      );
+                    }).toList();
+                  },
                 ),
+              ],
+            ),
+            body:
                 // --------------------------
-                // Row to display the side by side containers.
+                // Add padding.
                 // --------------------------
-                child: Row(
-                  // --------------------------
-                  // List of the two side by side containers
-                  // as children of the Row.
-                  // --------------------------
-                  children: <Widget>[
-                    // --------------------------
-                    // Expanded to fill up appr. half the screen.
-                    // --------------------------
-                    Expanded(
-                      // --------------------------
-                      // Contents of Expanded will update each
-                      // time a value is updated.
-                      // --------------------------
-                      child: ValueListenableBuilder<int>(
-                        valueListenable:
-                            todo, // Rebuild each time an item is added.
-                        builder: (context, value, child) {
-                          // Builder: Content to be rebuilt.
-                          // --------------------------
-                          // Fractionally sized to fill entire space given.
-                          // --------------------------
-                          return FractionallySizedBox(
-                            alignment: Alignment
-                                .centerLeft, // Doesn't matter, take up all space anyways.
-                            widthFactor: 1, // Take up all possible space.
-                            // --------------------------
-                            // Container to manage the actual todo stack.
-                            // --------------------------
-                            child: Container(
-                              child: Stack(
-                                children: todoList, // The list of todo widgets.
-                              ),
-                              height: 1000, // Take up a lot of the screen.
-                              margin: const EdgeInsets.all(6),
-                              // --------------------------
-                              // --------------------------
-                              decoration: BoxDecoration(
-                                  color: Theme.of(context).primaryColorLight,
-                                  border: Border.all(
-                                    color: Theme.of(context).primaryColor,
-                                    width: 3,
-                                  ),
-                                  borderRadius:
-                                      BorderRadius.all(Radius.circular(20))),
-                              // --------------------------
-                              // --------------------------
-                            ),
-                          );
-                        },
-                      ),
+                new Container(
+                    padding: const EdgeInsets.only(
+                      left: 9,
+                      top: 60,
+                      right: 9,
+                      bottom: 20,
                     ),
                     // --------------------------
-                    // Expanded to fill up appr. half the screen.
+                    // Row to display the side by side containers.
                     // --------------------------
-                    Expanded(
+                    child: Row(
                       // --------------------------
-                      // Contents of Expanded will update each
-                      // time a value is updated.
+                      // List of the two side by side containers
+                      // as children of the Row.
                       // --------------------------
-                      child: ValueListenableBuilder<int>(
-                        valueListenable: done,
-                        builder: (context, value, child) {
+                      children: <Widget>[
+                        // --------------------------
+                        // Expanded to fill up appr. half the screen.
+                        // --------------------------
+                        Expanded(
                           // --------------------------
-                          // Fractionally sized to fill entire space given.
+                          // Contents of Expanded will update each
+                          // time a value is updated.
                           // --------------------------
-                          return FractionallySizedBox(
-                            alignment: Alignment.centerLeft,
-                            widthFactor: 1,
-                            // --------------------------
-                            // Container to manage the actual todo stack.
-                            // --------------------------
-                            child: Container(
-                              child: Stack(
-                                children: doneList,
-                              ),
-                              height: 1000,
-                              margin: const EdgeInsets.all(6),
+                          child: ValueListenableBuilder<int>(
+                            valueListenable:
+                                todo, // Rebuild each time an item is added.
+                            builder: (context, value, child) {
+                              // Builder: Content to be rebuilt.
                               // --------------------------
+                              // Fractionally sized to fill entire space given.
                               // --------------------------
-                              decoration: BoxDecoration(
-                                  color: Theme.of(context).backgroundColor,
-                                  border: Border.all(
-                                    color: Theme.of(context).accentColor,
-                                    width: 3,
+                              return FractionallySizedBox(
+                                alignment: Alignment
+                                    .centerLeft, // Doesn't matter, take up all space anyways.
+                                widthFactor: 1, // Take up all possible space.
+                                // --------------------------
+                                // Container to manage the actual todo stack.
+                                // --------------------------
+                                child: Container(
+                                  child: Stack(
+                                    children:
+                                        todoList, // The list of todo widgets.
                                   ),
-                                  borderRadius:
-                                      BorderRadius.all(Radius.circular(20))),
+                                  height: 1000, // Take up a lot of the screen.
+                                  margin: const EdgeInsets.all(6),
+                                  // --------------------------
+                                  // --------------------------
+                                  decoration: BoxDecoration(
+                                      color:
+                                          Theme.of(context).primaryColorLight,
+                                      border: Border.all(
+                                        color: Theme.of(context).primaryColor,
+                                        width: 3,
+                                      ),
+                                      borderRadius: BorderRadius.all(
+                                          Radius.circular(20))),
+                                  // --------------------------
+                                  // --------------------------
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        // --------------------------
+                        // Expanded to fill up appr. half the screen.
+                        // --------------------------
+                        Expanded(
+                          // --------------------------
+                          // Contents of Expanded will update each
+                          // time a value is updated.
+                          // --------------------------
+                          child: ValueListenableBuilder<int>(
+                            valueListenable: done,
+                            builder: (context, value, child) {
                               // --------------------------
+                              // Fractionally sized to fill entire space given.
                               // --------------------------
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                )));
+                              return FractionallySizedBox(
+                                alignment: Alignment.centerLeft,
+                                widthFactor: 1,
+                                // --------------------------
+                                // Container to manage the actual todo stack.
+                                // --------------------------
+                                child: Container(
+                                  child: Stack(
+                                    children: doneList,
+                                  ),
+                                  height: 1000,
+                                  margin: const EdgeInsets.all(6),
+                                  // --------------------------
+                                  // --------------------------
+                                  decoration: BoxDecoration(
+                                      color: Theme.of(context).backgroundColor,
+                                      border: Border.all(
+                                        color: Theme.of(context).accentColor,
+                                        width: 3,
+                                      ),
+                                      borderRadius: BorderRadius.all(
+                                          Radius.circular(20))),
+                                  // --------------------------
+                                  // --------------------------
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ))));
   }
 }
 
@@ -782,6 +824,10 @@ class _MoveableStackItemState extends State<MoveableStackItem> {
                   // Update values to refresh UI.
                   done.value--;
                   todo.value++;
+
+                  print("Saving after move");
+
+                  saveListStates();
                 });
               }
 
@@ -839,6 +885,10 @@ class _MoveableStackItemState extends State<MoveableStackItem> {
                   // Update values to refresh UI.
                   done.value++;
                   todo.value--;
+
+                  print("Saving after move");
+
+                  saveListStates();
                 });
               }
 
