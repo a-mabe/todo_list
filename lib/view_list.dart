@@ -134,7 +134,7 @@ Route _createRoute() {
 Route _createHomeRoute() {
   return PageRouteBuilder(
     transitionDuration: Duration(milliseconds: 800),
-    pageBuilder: (context, animation, secondaryAnimation) => MyHomePage(),
+    pageBuilder: (context, animation, secondaryAnimation) => MyApp(),
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
       var begin = Offset(0.0, 1.0);
       var end = Offset.zero;
